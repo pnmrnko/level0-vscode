@@ -239,6 +239,15 @@ async function runQuery(client: OsmClient, raw: string, opts: DownloadOptions, l
   await addObjects(fetched, opts, log, notes);
 }
 
+// Download of API paths chosen by a code action.
+export async function downloadPaths(client: OsmClient, paths: string[], opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
+  try {
+    await addObjects(await fetchUrls(client, paths.map((p) => opts.apiBase + p), opts, log), opts, log);
+  } catch (err) {
+    showError('Download', err, log);
+  }
+}
+
 // Download of an area from the map panel.
 export async function downloadArea(client: OsmClient, bbox: Bbox, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
   const area = (bbox.north - bbox.south) * (bbox.east - bbox.west);

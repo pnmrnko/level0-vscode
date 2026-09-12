@@ -9,7 +9,8 @@ import { completionContext, MemberType } from './completion';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
-import { downloadArea, downloadCommand, overpassCommand } from './download';
+import { downloadArea, downloadCommand, downloadPaths, overpassCommand } from './download';
+import { missingActions } from './missing';
 import { OsmClient } from './osm/client';
 import { checkConflictsCommand, exportOsmCommand, showOscCommand } from './changes';
 import { revertCommand } from './revert';
@@ -593,6 +594,22 @@ function decorate(editor: vscode.TextEditor | undefined): void {
   editor.setDecorations(incomingDecoration, conflicts.map((c) => lineRange(c.incoming)));
 }
 
+// Offers to download objects the document refers to but does not contain:
+// the member under the cursor, or the missing members of the object or
+// selection.
+class Level0DownloadActions implements vscode.CodeActionProvider {
+  static readonly kind = vscode.CodeActionKind.Empty.append('level0l.download');
+
+  provideCodeActions(document: vscode.TextDocument, range: vscode.Range): vscode.CodeAction[] {
+    const parsed = parse(document.getText());
+    return missingActions(parsed, new Index(parsed), range.start.line, range.end.line).map((a) => {
+      const action = new vscode.CodeAction(a.title, Level0DownloadActions.kind);
+      action.command = { command: 'level0l.downloadPaths', title: a.title, arguments: [a.paths] };
+      return action;
+    });
+  }
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Level0L');
   const version = context.extension.packageJSON.version as string;
@@ -646,6 +663,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(OPEN_EXTERNAL, (url: string) => vscode.env.openExternal(vscode.Uri.parse(url))),
     vscode.commands.registerTextEditorCommand('level0l.stripMemberComments', stripMemberComments),
     vscode.commands.registerCommand('level0l.download', () => downloadCommand(osm, downloadOptions(), log)),
+    vscode.commands.registerCommand('level0l.downloadPaths', (paths: string[]) => downloadPaths(osm, paths, downloadOptions(), log)),
+    vscode.languages.registerCodeActionsProvider(selector, new Level0DownloadActions(), { providedCodeActionKinds: [Level0DownloadActions.kind] }),
     vscode.commands.registerCommand('level0l.runOverpass', () => overpassCommand(osm, downloadOptions(), log)),
     vscode.commands.registerCommand('level0l.checkConflicts', () => checkConflictsCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
