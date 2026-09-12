@@ -1,6 +1,6 @@
 # Level0L for Visual Studio Code
 
-Editing OpenStreetMap as text in VS Code: language support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the format of the [Level0](https://wiki.openstreetmap.org/wiki/Level0) editor, plus the editor's own workflow, download from the OSM API or Overpass, check against the server, upload as a changeset, without leaving VS Code.
+Editing OpenStreetMap as text in VS Code: language support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the format of the [Level0](https://wiki.openstreetmap.org/wiki/Level0) editor, plus the editor's own workflow, download from the OSM API or Overpass, a map beside the text, check against the server, upload as a changeset, without leaving VS Code.
 
 ## Features
 

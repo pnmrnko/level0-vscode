@@ -1,8 +1,8 @@
 {
   "name": "level0l",
   "displayName": "Level0L",
-  "description": "Edit OpenStreetMap as text: Level0L language support with taginfo, download from OSM and Overpass, conflict check and changeset upload",
-  "version": "0.2.0",
+  "description": "Edit OpenStreetMap as text: Level0L language support with taginfo, download from OSM and Overpass, a map, conflict check and changeset upload",
+  "version": "0.3.0",
   "publisher": "pnmrnko",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -32,7 +32,8 @@
     "level0",
     "level0l",
     "taginfo",
-    "overpass"
+    "overpass",
+    "map"
   ],
   "main": "./out/extension.js",
   "activationEvents": [],
