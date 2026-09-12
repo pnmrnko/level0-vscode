@@ -61,10 +61,10 @@ test('entity bodies and folds', () => {
 });
 
 test('deleted and conflict spans', () => {
-  assert.deepEqual(deletedSpans(text), [{ startLine: 16, endLine: 16 }]);
+  assert.deepEqual(deletedSpans(text), []);
   assert.deepEqual(deletedSpans('-way 1.1\n  highway = path\n  nd 2\n\nnode 4: 1, 1\n-node 5.2: 1, 1\n  amenity = bench\n'), [
-    { startLine: 0, endLine: 2 },
-    { startLine: 5, endLine: 6 },
+    { startLine: 1, endLine: 2 },
+    { startLine: 6, endLine: 6 },
   ]);
   assert.deepEqual(conflictSpans(text), [
     { current: { startLine: 17, endLine: 18 }, incoming: { startLine: 19, endLine: 20 } },

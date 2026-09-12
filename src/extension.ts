@@ -559,8 +559,8 @@ class Level0Diagnostics {
   }
 }
 
-// Objects marked for deletion are drawn at reduced opacity: Level0 ignores
-// their tags and members, only the header counts.
+// Bodies of objects marked for deletion are drawn at reduced opacity: Level0
+// ignores their tags and members, only the header counts.
 const deletedDecoration = vscode.window.createTextEditorDecorationType({ isWholeLine: true, opacity: '0.55' });
 
 // A conflict written by Level0 looks like a merge conflict: the comment block
