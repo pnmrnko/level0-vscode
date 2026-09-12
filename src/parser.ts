@@ -25,6 +25,9 @@ export interface Member {
   type: 'node' | 'way' | 'relation';
   id: string;
   role: string;
+  // Position of the id on the line.
+  start: number;
+  end: number;
 }
 
 export interface Entity {
@@ -32,6 +35,9 @@ export interface Entity {
   id: string;
   version?: string;
   line: number;
+  // Position of the id on the header line; absent when no id is written.
+  idStart?: number;
+  idEnd?: number;
   deleted: boolean;
   conflict: boolean;
   lat?: string;
@@ -97,6 +103,10 @@ export function parse(text: string): ParseResult {
         members: [],
       };
       const typeStart = line.indexOf(type);
+      if (id) {
+        cur.idStart = line.indexOf(id, typeStart + type.length);
+        cur.idEnd = cur.idStart + id.length;
+      }
       if (cur.conflict) {
         report(ln, 'error', `Please resolve conflict of ${type} ${cur.id}`);
       }
@@ -131,11 +141,13 @@ export function parse(text: string): ParseResult {
     if (m) {
       const [, kind, id, role] = m;
       const kindStart = line.indexOf(kind);
+      const idStart = line.indexOf(id, kindStart + kind.length);
+      const member = { line: ln, id, role: role ?? '', start: idStart, end: idStart + id.length };
       if (cur.type === 'node') {
         report(ln, 'error', 'A node cannot have member objects');
       } else if (cur.type === 'way') {
         if (kind === 'nd') {
-          cur.members.push({ line: ln, type: 'node', id, role: '' });
+          cur.members.push({ ...member, type: 'node', role: '' });
           if (role) {
             report(ln, 'warning', 'Role name specified for a way node', line.indexOf(role, kindStart), line.length);
           }
@@ -143,7 +155,7 @@ export function parse(text: string): ParseResult {
           report(ln, 'error', 'Ways cannot have members besides nodes', kindStart, kindStart + kind.length);
         }
       } else if (cur.type === 'relation') {
-        cur.members.push({ line: ln, type: MEMBER_TYPES[kind], id, role: role ?? '' });
+        cur.members.push({ ...member, type: MEMBER_TYPES[kind] });
       }
       return;
     }

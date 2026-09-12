@@ -73,7 +73,7 @@ node: 50.4503, 30.5241
 
 
 # ---------------------------------------------------------------------------
-# Way: "nd" lines list its nodes in order. A closed way repeats the first node last. Ways must have at least two nodes. Member ids link to osm.org; new (negative) nodes do not.
+# Way: "nd" lines list its nodes in order. A closed way repeats the first node last. Ways must have at least two nodes. Member ids link to osm.org; new (negative) nodes do not. Members also navigate within this file: F12 or Cmd/Ctrl+click on "nd 4294967296" jumps to the node header above, Alt+F12 peeks at it, Shift+F12 on any id lists the ways and relations using it, and F2 on a negative id such as "-1" renumbers it everywhere.
 
 way 123456789.7
   highway = footway
