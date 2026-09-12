@@ -49,6 +49,15 @@
         ],
         "firstLine": "^\\s*[!-]*(node|way|relation|changeset)\\b",
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "overpassql",
+        "aliases": [
+          "Overpass QL"
+        ],
+        "extensions": [
+          ".overpassql"
+        ]
       }
     ],
     "grammars": [
@@ -101,6 +110,11 @@
           "default": "https://api.openstreetmap.org/api/0.6/",
           "description": "Base URL of the OSM API 0.6 used for downloading and uploading. Use https://api06.dev.openstreetmap.org/api/0.6/ for the development server."
         },
+        "level0l.overpassUrl": {
+          "type": "string",
+          "default": "https://overpass-api.de/api/interpreter",
+          "description": "Overpass API endpoint used by \"Run Overpass query\"."
+        },
         "level0l.maxObjects": {
           "type": "integer",
           "default": 500,
@@ -125,6 +139,11 @@
       {
         "command": "level0l.download",
         "title": "Download from OSM",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.runOverpass",
+        "title": "Run Overpass query",
         "category": "Level0L"
       }
     ],

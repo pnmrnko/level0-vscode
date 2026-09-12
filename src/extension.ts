@@ -9,7 +9,7 @@ import { completionContext, MemberType } from './completion';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
-import { downloadCommand } from './download';
+import { downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
 
 function config() {
@@ -612,6 +612,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const osm = new OsmClient({ userAgent });
   const downloadOptions = () => ({
     apiBase: config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/'),
+    overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
     maxObjects: config().get<number>('maxObjects', 500),
   });
 
@@ -625,6 +626,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(OPEN_EXTERNAL, (url: string) => vscode.env.openExternal(vscode.Uri.parse(url))),
     vscode.commands.registerTextEditorCommand('level0l.stripMemberComments', stripMemberComments),
     vscode.commands.registerCommand('level0l.download', () => downloadCommand(osm, downloadOptions(), log)),
+    vscode.commands.registerCommand('level0l.runOverpass', () => overpassCommand(osm, downloadOptions(), log)),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
