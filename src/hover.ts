@@ -41,7 +41,7 @@ function statusBadge(page: WikiPage | undefined): string {
     return '';
   }
   const bad = /obsolete|deprecated|discardable|abandoned|rejected/i.test(s);
-  return bad ? ` · ⚠️ **${s}**` : ` · _${s}_`;
+  return bad ? ` · **${s.toUpperCase()}**` : ` · _${s}_`;
 }
 
 function footer(wikiPath: string, taginfoPath: string, o: HoverOptions): string {
@@ -120,7 +120,7 @@ export function buildUnknownHover(key: string, value: string | undefined, o: Hov
     value === undefined
       ? `keys/${encodeURIComponent(key)}`
       : `tags/${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-  return `**${label}**\n\n⚠️ Not used anywhere in OSM according to taginfo — possibly a typo.\n\n${footer(wikiPath, taginfoPath, o)}`;
+  return `**${label}**\n\n**Warning:** not used anywhere in OSM according to taginfo, possibly a typo.\n\n${footer(wikiPath, taginfoPath, o)}`;
 }
 
 export function totalCount(counts: Counts[]): number {
