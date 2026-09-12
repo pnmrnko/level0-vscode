@@ -8,6 +8,10 @@ export interface LinkOptions {
   osmBaseUrl: string;
   wikiBaseUrl: string;
   tagLinks: boolean;
+  // "type/id" of entities present in the document. Members referring to them
+  // get no web link: go to definition handles the click locally, and VS Code
+  // would otherwise run both the link and the definition.
+  definedIds?: Set<string>;
 }
 
 export interface TextLink {
@@ -104,6 +108,9 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
         return;
       }
       const type = MEMBER_TYPES[kind];
+      if (opts.definedIds?.has(`${type}/${id}`)) {
+        return;
+      }
       const start = line.indexOf(id, line.indexOf(kind) + kind.length);
       links.push({
         line: lineNo,

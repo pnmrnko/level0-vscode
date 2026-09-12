@@ -3,7 +3,7 @@ import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptio
 import { conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
-import { Index, isNewId } from './refs';
+import { Index } from './refs';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
@@ -57,7 +57,12 @@ class Level0LinkProvider implements vscode.DocumentLinkProvider {
 
   provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
     const lazy = config().get<boolean>('taginfo.enabled', true);
-    return extractLinks(document.getText(), linkOptions()).map((l) => {
+    const definedIds = new Set(
+      parse(document.getText())
+        .entities.filter((e) => e.type !== 'changeset' && e.idStart !== undefined)
+        .map((e) => `${e.type}/${e.id}`)
+    );
+    return extractLinks(document.getText(), { ...linkOptions(), definedIds }).map((l) => {
       const range = new vscode.Range(l.line, l.start, l.line, l.end);
       const link =
         lazy && l.wiki
@@ -179,10 +184,10 @@ class Level0HoverProvider implements vscode.HoverProvider {
   }
 }
 
-// Definition, references and rename for object ids: "nd 123" in a way points
-// at the "node 123" header of the same document. The index is rebuilt per
+// Definition and references for object ids: "nd 123" in a way points at the
+// "node 123" header of the same document. The index is rebuilt per
 // document version, which is cheap for files of this size.
-class Level0References implements vscode.DefinitionProvider, vscode.ReferenceProvider, vscode.RenameProvider {
+class Level0References implements vscode.DefinitionProvider, vscode.ReferenceProvider {
   private cache?: { uri: string; version: number; index: Index };
 
   private index(document: vscode.TextDocument): Index {
@@ -223,32 +228,6 @@ class Level0References implements vscode.DefinitionProvider, vscode.ReferencePro
     return locations.map((l) => new vscode.Location(document.uri, this.toRange(l)));
   }
 
-  prepareRename(document: vscode.TextDocument, position: vscode.Position): { range: vscode.Range; placeholder: string } {
-    const symbol = this.index(document).symbolAt(position.line, position.character);
-    if (!symbol) {
-      throw new Error('Not an object id');
-    }
-    if (!isNewId(symbol.id)) {
-      throw new Error('Only ids of new objects (negative) can be renamed; server ids are fixed');
-    }
-    return { range: this.toRange(symbol.location), placeholder: symbol.id };
-  }
-
-  provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string): vscode.WorkspaceEdit {
-    const index = this.index(document);
-    const symbol = index.symbolAt(position.line, position.character)!;
-    if (!/^-[1-9]\d*$/.test(newName)) {
-      throw new Error('A new object id must be a negative integer');
-    }
-    if (newName !== symbol.id && index.occurrences(symbol.type, newName).length > 0) {
-      throw new Error(`${symbol.type} ${newName} already exists in this document`);
-    }
-    const edit = new vscode.WorkspaceEdit();
-    for (const l of index.occurrences(symbol.type, symbol.id)) {
-      edit.replace(document.uri, this.toRange(l), newName);
-    }
-    return edit;
-  }
 }
 
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
@@ -373,7 +352,6 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
     vscode.languages.registerReferenceProvider(selector, references),
-    vscode.languages.registerRenameProvider(selector, references),
     versionDecoration,
     currentDecoration,
     incomingDecoration,

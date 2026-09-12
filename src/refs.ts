@@ -84,7 +84,3 @@ export class Index {
   }
 }
 
-export function isNewId(id: string): boolean {
-  return Number(id) < 0;
-}
-
