@@ -71,3 +71,24 @@ export async function fetchState(
 async function readBatch(client: Fetcher, url: string) {
   return readOsmXml(await client.getXml(url));
 }
+
+// Specific versions of objects from the history, one request each.
+export async function fetchVersions(
+  client: Fetcher,
+  apiBase: string,
+  wanted: { type: ObjectType; id: number; version: number }[]
+): Promise<Map<string, OsmObject | undefined>> {
+  const out = new Map<string, OsmObject | undefined>();
+  for (const w of wanted) {
+    try {
+      const { objects } = await readBatch(client, `${apiBase}${w.type}/${w.id}/${w.version}`);
+      out.set(key(w), objects[0]);
+    } catch (err) {
+      if (status(err) !== 404 && status(err) !== 403) {
+        throw err;
+      }
+      out.set(key(w), undefined);
+    }
+  }
+  return out;
+}

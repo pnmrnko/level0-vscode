@@ -8,6 +8,7 @@ import { resolveInput, BBOX_RADIUS } from './osm/input';
 import { OsmObject, key } from './osm/model';
 import { Bbox, formatBbox, hasBboxPlaceholder, hasMeta, isOverpassQuery, overpassError, parseBbox, prepareQuery } from './osm/overpass';
 import { readOsmXml } from './osm/xml';
+import { renumber } from './osm/renumber';
 import { Entity, parse } from './parser';
 
 export interface DownloadOptions {
@@ -120,16 +121,22 @@ async function fetchOverpassNow(client: OsmClient, query: string, opts: Download
 async function addObjects(fetched: Fetched, opts: DownloadOptions, log: vscode.OutputChannel, extraNotes: string[] = []): Promise<void> {
   const editor = targetEditor();
   const present = new Set<string>();
+  const negative = new Set<number>();
   if (editor) {
     for (const e of parse(editor.document.getText()).entities) {
       if (Number(e.id) > 0) {
         present.add(`${e.type}${e.id}`);
+      } else if (Number(e.id) < 0) {
+        negative.add(Number(e.id));
       }
     }
   }
   const deleted = fetched.objects.filter((o) => o.deleted).length;
   const skipped = fetched.objects.filter((o) => !o.deleted && present.has(key(o))).length;
-  const objects = fetched.objects.filter((o) => !o.deleted && !present.has(key(o)));
+  const objects = renumber(
+    fetched.objects.filter((o) => !o.deleted && !present.has(key(o))),
+    negative
+  );
 
   const notes = [...extraNotes];
   if (skipped) {

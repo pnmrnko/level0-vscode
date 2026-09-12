@@ -37,6 +37,11 @@ export interface Problem {
   message: string;
 }
 
+export interface Refresh {
+  entity: Entity;
+  theirs: OsmObject;
+}
+
 export interface Plan {
   changeset?: OsmObject;
   // Ids given to objects written without one, by header line.
@@ -44,6 +49,9 @@ export interface Plan {
   changes: Change[];
   unchanged: Entity[];
   conflicts: Conflict[];
+  // Objects the server changed that the document had not touched: they are
+  // replaced by the server version without a conflict marker.
+  refreshed: Refresh[];
   problems: Problem[];
 }
 
@@ -86,7 +94,7 @@ export function compareChanges(a: Change, b: Change): number {
 }
 
 export function plan(entities: Entity[], server: Map<string, OsmObject | undefined>): Plan {
-  const out: Plan = { zeroIds: new Map(), changes: [], unchanged: [], conflicts: [], problems: [] };
+  const out: Plan = { zeroIds: new Map(), changes: [], unchanged: [], conflicts: [], refreshed: [], problems: [] };
   const used = new Set<number>();
   for (const e of entities) {
     if (e.type !== 'changeset' && Number(e.id) < 0) {
@@ -161,4 +169,26 @@ export function plan(entities: Entity[], server: Map<string, OsmObject | undefin
   }
   out.changes.sort(compareChanges);
   return out;
+}
+
+// Versions of the conflicting objects as the document knows them: what to
+// fetch from the history to tell an untouched object from an edited one.
+export function historyKeys(p: Plan): { type: OsmObject['type']; id: number; version: number }[] {
+  return p.conflicts.filter((c) => c.theirs && c.mine.version !== undefined).map((c) => ({ type: c.mine.type, id: c.mine.id, version: c.mine.version! }));
+}
+
+// Level0 raises a conflict only for objects the user edited; here the
+// document is compared with the version it was downloaded from. Conflicts
+// whose object equals that version move to the refreshed list.
+export function settleConflicts(p: Plan, history: Map<string, OsmObject | undefined>): void {
+  const remaining: Conflict[] = [];
+  for (const c of p.conflicts) {
+    const old = c.theirs && history.get(key(c.mine));
+    if (old && c.mine.action !== 'delete' && !isModified(c.mine, old)) {
+      p.refreshed.push({ entity: c.entity, theirs: c.theirs! });
+    } else {
+      remaining.push(c);
+    }
+  }
+  p.conflicts = remaining;
 }

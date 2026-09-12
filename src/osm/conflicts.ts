@@ -3,7 +3,7 @@
 // Pure module, no vscode API.
 
 import { bodyEnd } from '../symbols';
-import { Conflict } from './diff';
+import { Conflict, Refresh } from './diff';
 import { formatObject } from './format';
 
 export interface LineReplacement {
@@ -25,4 +25,12 @@ export function conflictReplacements(conflicts: Conflict[]): LineReplacement[] {
     out.push({ startLine: c.entity.line, endLine: bodyEnd(c.entity), text });
   }
   return out.sort((a, b) => b.startLine - a.startLine);
+}
+
+// Untouched objects the server changed are simply replaced by the server
+// version.
+export function refreshReplacements(refreshed: Refresh[]): LineReplacement[] {
+  return refreshed
+    .map((r) => ({ startLine: r.entity.line, endLine: bodyEnd(r.entity), text: formatObject(r.theirs).replace(/\n$/, '') }))
+    .sort((a, b) => b.startLine - a.startLine);
 }

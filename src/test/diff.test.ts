@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { isModified, plan, serverKeys } from '../osm/diff';
-import { conflictReplacements } from '../osm/conflicts';
+import { historyKeys, isModified, plan, serverKeys, settleConflicts } from '../osm/diff';
+import { conflictReplacements, refreshReplacements } from '../osm/conflicts';
+import { renumber } from '../osm/renumber';
 import { createChangesetXml, createOsc } from '../osm/osc';
 import { OsmObject } from '../osm/model';
 import { parse } from '../parser';
@@ -165,4 +166,42 @@ test('conflict replacement covers the entity block and keeps the delete prefix',
         '!node 4.6: 50.4, 30.41\n  shop = bakery\n  name = X',
     },
   ]);
+});
+
+test('untouched objects the server changed are refreshed, edited ones stay conflicts', () => {
+  const doc = parse('node 1.2: 1, 1\n  a = b\nnode 2.2: 1, 1\n  a = b\n-node 3.2: 1, 1\n').entities;
+  const server = state(
+    obj({ type: 'node', id: 1, version: 3, lat: '1', lon: '1' }, [['a', 'c']]),
+    obj({ type: 'node', id: 2, version: 3, lat: '1', lon: '1' }, [['a', 'c']]),
+    obj({ type: 'node', id: 3, version: 3, lat: '1', lon: '1' })
+  );
+  const p = plan(doc, server);
+  assert.deepEqual(historyKeys(p), [
+    { type: 'node', id: 1, version: 2 },
+    { type: 'node', id: 2, version: 2 },
+    { type: 'node', id: 3, version: 2 },
+  ]);
+  const history = state(
+    obj({ type: 'node', id: 1, version: 2, lat: '1', lon: '1' }, [['a', 'b']]),
+    obj({ type: 'node', id: 2, version: 2, lat: '1', lon: '1' }, [['a', 'x']]),
+    obj({ type: 'node', id: 3, version: 2, lat: '1', lon: '1' })
+  );
+  settleConflicts(p, history);
+  assert.deepEqual(p.refreshed.map((r) => [r.entity.id, r.theirs.version]), [['1', 3]]);
+  assert.deepEqual(p.conflicts.map((c) => c.entity.id), ['2', '3']);
+  assert.deepEqual(refreshReplacements(p.refreshed), [{ startLine: 0, endLine: 1, text: 'node 1.3: 1, 1\n  a = c' }]);
+});
+
+test('negative ids taken by the document are renumbered with their references', () => {
+  const objects = [
+    obj({ type: 'node', id: -1, lat: '1', lon: '1' }),
+    obj({ type: 'node', id: -2, lat: '1', lon: '1' }),
+    obj({ type: 'way', id: -1, nodes: [-1, -2, 5] }),
+    obj({ type: 'relation', id: -3, members: [{ type: 'way', id: -1, role: 'outer' }, { type: 'node', id: -2, role: '' }] }),
+  ];
+  const out = renumber(objects, new Set([-1, -3]));
+  assert.deepEqual(out.map((o) => [o.type, o.id]), [['node', -4], ['node', -2], ['way', -5], ['relation', -6]]);
+  assert.deepEqual(out[2].nodes, [-4, -2, 5]);
+  assert.deepEqual(out[3].members!.map((m) => m.id), [-5, -2]);
+  assert.equal(renumber(objects, new Set([-9])), objects);
 });

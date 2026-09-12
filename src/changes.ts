@@ -3,10 +3,10 @@
 
 import * as vscode from 'vscode';
 import { OsmClient } from './osm/client';
-import { conflictReplacements } from './osm/conflicts';
-import { Plan, plan, serverKeys } from './osm/diff';
+import { conflictReplacements, refreshReplacements } from './osm/conflicts';
+import { Plan, historyKeys, plan, serverKeys, settleConflicts } from './osm/diff';
 import { createOsc } from './osm/osc';
-import { fetchState } from './osm/state';
+import { fetchState, fetchVersions } from './osm/state';
 import { parse } from './parser';
 
 export interface ChangesOptions {
@@ -26,11 +26,19 @@ export function activeLevel0Editor(): vscode.TextEditor | undefined {
 export async function computePlan(editor: vscode.TextEditor, client: OsmClient, opts: ChangesOptions, log: vscode.OutputChannel): Promise<Plan | undefined> {
   const { entities } = parse(editor.document.getText());
   try {
-    const state = await vscode.window.withProgress(
+    return await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: 'Comparing with the server', cancellable: false },
-      (progress) => fetchState(client, opts.apiBase, serverKeys(entities), (done, total) => progress.report({ message: `${done} of ${total} objects` }))
+      async (progress) => {
+        const state = await fetchState(client, opts.apiBase, serverKeys(entities), (done, total) => progress.report({ message: `${done} of ${total} objects` }));
+        const p = plan(entities, state);
+        const wanted = historyKeys(p);
+        if (wanted.length) {
+          progress.report({ message: `${wanted.length} changed on the server, reading history` });
+          settleConflicts(p, await fetchVersions(client, opts.apiBase, wanted));
+        }
+        return p;
+      }
     );
-    return plan(entities, state);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log.appendLine(`server state failed: ${message}`);
@@ -40,9 +48,10 @@ export async function computePlan(editor: vscode.TextEditor, client: OsmClient, 
 }
 
 // Conflicts are written into the document as Level0 writes them; the ones
-// without a server object (deleted there) are only reported.
+// without a server object (deleted there) are only reported. Untouched
+// objects the server changed are replaced by the server version.
 export async function writeConflicts(editor: vscode.TextEditor, p: Plan): Promise<void> {
-  const replacements = conflictReplacements(p.conflicts);
+  const replacements = [...conflictReplacements(p.conflicts), ...refreshReplacements(p.refreshed)].sort((a, b) => b.startLine - a.startLine);
   if (replacements.length === 0) {
     return;
   }
@@ -62,6 +71,9 @@ export function summary(p: Plan): string {
   const parts = [`${count(p, 'create')} to create`, `${count(p, 'modify')} to modify`, `${count(p, 'delete')} to delete`, `${p.unchanged.length} unchanged`];
   const written = p.conflicts.filter((c) => c.theirs).length;
   const gone = p.conflicts.filter((c) => !c.theirs);
+  if (p.refreshed.length) {
+    parts.push(`${p.refreshed.length} updated from the server`);
+  }
   if (written) {
     parts.push(`${written} ${written === 1 ? 'conflict' : 'conflicts'} written into the document`);
   }
