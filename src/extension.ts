@@ -37,8 +37,13 @@ function hoverOptions(): HoverOptions {
 // tells whether a wiki page exists (and in which languages), so the click can
 // go to the localized page, or to the taginfo page when there is none. Object
 // and map links have static targets.
+//
+// VS Code recomputes links a moment after each edit, so a click right after
+// typing can hit a link computed for the previous text. The link therefore
+// remembers only where it is; the key and value are re-read from the document
+// at click time.
 class WikiLink extends vscode.DocumentLink {
-  constructor(range: vscode.Range, public fallback: string, public key: string, public value?: string) {
+  constructor(range: vscode.Range, public uri: vscode.Uri, public fallback: string, public onValue: boolean) {
     super(range);
   }
 }
@@ -52,7 +57,7 @@ class Level0LinkProvider implements vscode.DocumentLinkProvider {
       const range = new vscode.Range(l.line, l.start, l.line, l.end);
       const link =
         lazy && l.wiki
-          ? new WikiLink(range, l.url, l.wiki.key, l.wiki.value)
+          ? new WikiLink(range, document.uri, l.url, l.wiki.value !== undefined)
           : new vscode.DocumentLink(range, vscode.Uri.parse(l.url));
       link.tooltip = l.tooltip;
       return link;
@@ -64,12 +69,30 @@ class Level0LinkProvider implements vscode.DocumentLinkProvider {
       return link;
     }
     try {
-      link.target = vscode.Uri.parse(await this.resolveTarget(link.key, link.value));
+      const current = this.currentTag(link);
+      link.target = vscode.Uri.parse(
+        current ? await this.resolveTarget(current.key, current.value) : link.fallback
+      );
     } catch (err) {
       this.log.appendLine(`link resolve failed: ${err instanceof Error ? err.message : String(err)}`);
       link.target = vscode.Uri.parse(link.fallback);
     }
     return link;
+  }
+
+  // Key and value as they are in the document now, not as they were when the
+  // link was computed. A value link whose value is no longer an enumerated
+  // value degrades to a key link.
+  private currentTag(link: WikiLink): { key: string; value?: string } | undefined {
+    const document = vscode.workspace.textDocuments.find((d) => d.uri.toString() === link.uri.toString());
+    if (!document || link.range.start.line >= document.lineCount) {
+      return undefined;
+    }
+    const tag = parseTagLine(document.lineAt(link.range.start.line).text);
+    if (!tag) {
+      return undefined;
+    }
+    return link.onValue && isEnumValue(tag.value) ? { key: tag.key, value: tag.value } : { key: tag.key };
   }
 
   private async resolveTarget(key: string, value?: string): Promise<string> {
