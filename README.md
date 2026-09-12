@@ -37,10 +37,10 @@ Taginfo requests go out with a `level0-vscode/<version>` User-Agent as its [usag
 
 ```bash
 npm install
-npm run compile
+npm test
 ```
 
-Then press F5 in VS Code to launch an Extension Development Host with the `samples/` folder opened.
+`npm test` compiles and runs the unit tests of the parser, links, completion and outline modules with Node's built-in test runner; they need no VS Code and no network. Then press F5 in VS Code to launch an Extension Development Host with the `samples/` folder opened.
 
 To package a `.vsix`: `npx @vscode/vsce package`.
 
