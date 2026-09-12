@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Text copied from JOSM with the comfort0 plugin is read correctly: the `#comment` after a member line is no longer taken as a role. Relation members with such a comment get an information marker, since Level0 itself would read the comment as part of the role.
+- New command "Level0L: Strip member comments (JOSM comfort0)" removes those comments before pasting into Level0.
+
 ## 0.1.0
 
 First release.
