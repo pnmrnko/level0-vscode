@@ -19,7 +19,7 @@ changeset
 
 
 # ---------------------------------------------------------------------------
-# Existing node: "id.version" and coordinates. The id links to osm.org, the coordinates link to the map at zoom 18. The version is what Level0 sends to the API; keep it so the server can detect conflicts.
+# Existing node: "id.version" and coordinates. The id links to the object on osm.org, the version number links to that exact version of it, the coordinates link to the map at zoom 18. The version is what Level0 sends to the API; keep it so the server can detect conflicts.
 #
 # Hover "amenity" for the key: status "de facto", description in your language, counts by object type, top values. Hover "cafe" for the tag: status "approved", description, "Applies to", commonly combined tags.
 
@@ -91,7 +91,7 @@ way -2
   nd -1
 
 # Closed way (area). "building" hover shows how dominant "yes" is among values.
-way 987654322.4
+way 987654322.1
   building = yes
   building:levels = 4
   nd 1500000001

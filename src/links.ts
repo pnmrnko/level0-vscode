@@ -56,7 +56,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
 
     let m = HEADER_RE.exec(line);
     if (m) {
-      const [, , , type, id, , lat, lon] = m;
+      const [, , , type, id, version, lat, lon] = m;
       insideChangeset = type === 'changeset';
 
       if (id && !id.startsWith('-') && id !== '0') {
@@ -68,6 +68,18 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
           url: `${osm}/${type}/${id}`,
           tooltip: `Open ${type} ${id} on OSM`,
         });
+        // The version number opens that exact version, which may differ
+        // from the current one on the server.
+        if (version && type !== 'changeset') {
+          const vStart = start + id.length + 1;
+          links.push({
+            line: lineNo,
+            start: vStart,
+            end: vStart + version.length,
+            url: `${osm}/${type}/${id}/history/${version}`,
+            tooltip: `Open version ${version} of ${type} ${id}`,
+          });
+        }
       }
 
       if (lat && lon) {
