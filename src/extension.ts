@@ -37,6 +37,18 @@ function hoverOptions(): HoverOptions {
   };
 }
 
+// The editor's link opener hands only http, https and mailto to the system;
+// tel: or viber: would be opened as an editor resource and fail. Such links go
+// through a command that calls env.openExternal, which passes any scheme on.
+const OPEN_EXTERNAL = 'level0l.openExternal';
+
+function linkTarget(url: string): vscode.Uri {
+  if (/^(https?|mailto):/i.test(url)) {
+    return vscode.Uri.parse(url);
+  }
+  return vscode.Uri.parse(`command:${OPEN_EXTERNAL}?${encodeURIComponent(JSON.stringify([url]))}`);
+}
+
 // Wiki links are returned without a target and resolved on click: taginfo
 // tells whether a wiki page exists (and in which languages), so the click can
 // go to the localized page, or to the taginfo page when there is none. Object
@@ -67,7 +79,7 @@ class Level0LinkProvider implements vscode.DocumentLinkProvider {
       const link =
         lazy && l.wiki
           ? new WikiLink(range, document.uri, l.url, l.wiki.value !== undefined)
-          : new vscode.DocumentLink(range, vscode.Uri.parse(l.url));
+          : new vscode.DocumentLink(range, linkTarget(l.url));
       link.tooltip = l.tooltip;
       return link;
     });
@@ -348,6 +360,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     log,
     diagnostics,
+    vscode.commands.registerCommand(OPEN_EXTERNAL, (url: string) => vscode.env.openExternal(vscode.Uri.parse(url))),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
