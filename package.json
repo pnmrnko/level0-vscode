@@ -88,7 +88,8 @@
     },
     "configurationDefaults": {
       "[level0l]": {
-        "editor.wordWrap": "on"
+        "editor.wordWrap": "on",
+        "editor.guides.indentation": false
       }
     }
   },
