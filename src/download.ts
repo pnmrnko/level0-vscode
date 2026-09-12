@@ -17,7 +17,12 @@ export interface DownloadOptions {
   maxObjects: number;
   // Remembers the last bounding box typed for {{bbox}}.
   state: vscode.Memento;
+  // The area selected on the map, when there is one.
+  mapBbox: () => Bbox | undefined;
 }
+
+// The API refuses map calls over a larger area, in square degrees.
+const MAX_AREA = 0.25;
 
 const LAST_BBOX = 'level0l.lastBbox';
 
@@ -180,11 +185,15 @@ function showError(what: string, err: unknown, log: vscode.OutputChannel): void 
   vscode.window.showErrorMessage(`${what} failed: ${message}`);
 }
 
-// {{bbox}} is the extent of the Level0L document next to the query; without
-// one, the user is asked for a box.
+// {{bbox}} is the area selected on the map, else the extent of the Level0L
+// document next to the query; without either, the user is asked for a box.
 async function bboxFor(query: string, opts: DownloadOptions): Promise<Bbox | undefined> {
   if (!hasBboxPlaceholder(query)) {
     return undefined;
+  }
+  const fromMap = opts.mapBbox();
+  if (fromMap) {
+    return fromMap;
   }
   const editor = targetEditor();
   const fromDocument = editor && documentBbox(parse(editor.document.getText()).entities);
@@ -228,6 +237,21 @@ async function runQuery(client: OsmClient, raw: string, opts: DownloadOptions, l
     notes.push(`${unversioned} without a version, use "out meta" to be able to upload them`);
   }
   await addObjects(fetched, opts, log, notes);
+}
+
+// Download of an area from the map panel.
+export async function downloadArea(client: OsmClient, bbox: Bbox, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
+  const area = (bbox.north - bbox.south) * (bbox.east - bbox.west);
+  if (area > MAX_AREA) {
+    vscode.window.showErrorMessage(`The area is ${area.toFixed(2)} square degrees, the API allows ${MAX_AREA}; zoom in or select a smaller area`);
+    return;
+  }
+  const url = `${opts.apiBase}map?bbox=${[bbox.west, bbox.south, bbox.east, bbox.north].map((n) => n.toFixed(6)).join(',')}`;
+  try {
+    await addObjects(await fetchUrls(client, [url], opts, log), opts, log);
+  } catch (err) {
+    showError('Download', err, log);
+  }
 }
 
 export async function downloadCommand(client: OsmClient, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {

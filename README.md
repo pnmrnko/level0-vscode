@@ -29,6 +29,7 @@ Files are recognized by the `.l0l` and `.level0` extensions, or by a first line 
 - Login. "Level0L: Log in to OSM" opens the OSM authorization page in the browser; after approval the browser returns to VS Code and the token is kept in the editor's secret storage (the system keychain), one per server, until "Level0L: Log out of OSM". No password ever goes through the extension. The return link is `vscode://pnmrnko.level0l/oauth`, which is what is registered with OSM, so the login works in VS Code proper; other editors built on VS Code use their own URL scheme and would need their own registration, settable with `level0l.oauth.clientId`. In this version the built-in application exists for the development server only; to upload to openstreetmap.org, register a public OAuth 2 application there (redirect URI as above, permissions "read user preferences" and "modify the map") and put its client id into `level0l.oauth.clientId`.
 - Revert. "Level0L: Revert object to the server version" replaces the object under the cursor, or every object the selection touches, with its current server version; a conflict block above it goes too. New objects have nothing to revert to and are reported, as are objects deleted on the server.
 - Export. "Level0L: Export as OSM XML" saves the document as a `.osm` file for JOSM and other editors, with `action` attributes on the objects an upload would create, modify or delete, after the same comparison with the server as the conflict check.
+- Map. "Level0L: Show map" (also the map icon in the editor title) opens a Leaflet map beside the editor with the objects of the document: nodes as dots (filled when tagged, green when new, red when marked for deletion), ways as lines through the nodes the document has (dashed when some are missing), relations as their member ways and nodes. The map follows the cursor and highlights the object under it; clicking an object on the map jumps to its line. "Select area" takes a rectangle by dragging; "Download area" fetches it, or the visible map when nothing is selected, through the API `map` call (at most 0.25 square degrees); the same rectangle is what `{{bbox}}` in Overpass queries expands to while it exists. "Pick point" puts the clicked coordinates into the node header under the cursor, or adds a new node after the cursor line. The map keeps its position between openings.
 - Account in the status bar. While a Level0L document is active the status bar shows who is logged in, with "(dev)" when the development server is configured, or "Log in to OSM"; clicking it logs in, or offers to log out.
 
 ## Trying it safely
@@ -55,6 +56,9 @@ From the VS Code Marketplace or Open VSX, search for "Level0L". To install a dow
 | `level0l.osmApiUrl` | `https://api.openstreetmap.org/api/0.6/` | OSM API used for downloads and uploads. Set to `https://api06.dev.openstreetmap.org/api/0.6/` for the development server. |
 | `level0l.oauth.clientId` | `""` | Client id of an OAuth 2 application registered on the OSM site in use; empty uses the built-in ids for openstreetmap.org and the development server. |
 | `level0l.overpassUrl` | `https://overpass-api.de/api/interpreter` | Overpass API endpoint, see below. |
+| `level0l.map.tileUrl` | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | Tiles of the map panel. See below for alternatives. |
+| `level0l.map.attribution` | OpenStreetMap contributors | Attribution shown on the map, HTML allowed. |
+| `level0l.map.maxZoom` | `19` | Highest zoom the tile server offers. |
 | `level0l.maxObjects` | `500` | Most objects a single download adds, the same limit Level0 has. |
 
 Public Overpass instances with global coverage, from the [OSM wiki](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances):
@@ -64,6 +68,14 @@ Public Overpass instances with global coverage, from the [OSM wiki](https://wiki
 | `https://overpass-api.de/api/interpreter` | The main instance, run by FOSSGIS and the default here. Applications get about 100 queries and 10 MB a day in total across all their users, one query at a time, with an identifying User-Agent; after a 429 or 406 wait 30 seconds. It is often overloaded. |
 | `https://overpass.private.coffee/api/interpreter` | No rate limit; large projects should notify support@private.coffee. Formerly overpass.kumi.systems. |
 | `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | No request limitations, run by VK Maps. |
+
+Tile servers for the map panel. The default is the standard OSM map, whose [usage policy](https://operations.osmfoundation.org/policies/tiles/) allows light use by applications like this; the browser inside VS Code identifies itself. Alternatives, each with its own attribution to put into `level0l.map.attribution`:
+
+| Tile URL | Notes |
+| --- | --- |
+| `https://tile.openstreetmap.org.ua/styles/osm-bright/{z}/{x}/{y}.png` | Ukrainian OSM community, OSM Bright style, borders of Ukraine as by its law; `positron-gl-style` and `dark-matter-gl-style` in place of `osm-bright` give a light and a dark style. Rendered from a periodically updated extract, so recent edits take days to appear. |
+| `https://tile.openstreetmap.de/{z}/{x}/{y}.png` | German style, FOSSGIS. |
+| `https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png` | Humanitarian style. |
 
 Taginfo, OSM API and Overpass requests go out with a `level0-vscode/<version>` User-Agent, as the [taginfo](https://wiki.openstreetmap.org/wiki/Taginfo/API) and Overpass usage policies ask. Every request and failure is logged to the "Level0L" output channel; failures of hovers and diagnostics never block the editor.
 

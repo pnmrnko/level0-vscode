@@ -1,0 +1,14 @@
+html, body, #map { height: 100%; margin: 0; padding: 0; }
+body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); background: var(--vscode-editor-background); }
+#bar { position: absolute; top: 0; left: 0; right: 0; z-index: 1000; display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; padding: 6px; overflow: hidden; background: var(--vscode-editorWidget-background); border-bottom: 1px solid var(--vscode-editorWidget-border, transparent); }
+#bar button { font: inherit; white-space: nowrap; padding: 2px 8px; color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: none; border-radius: 2px; cursor: pointer; }
+#bar button:hover { background: var(--vscode-button-hoverBackground); }
+#bar button.secondary { color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryBackground); }
+#bar button.secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
+#bar button.active { outline: 2px solid var(--vscode-focusBorder); }
+#bar button:disabled { opacity: 0.5; cursor: default; }
+#status { margin-left: auto; flex: 1; min-width: 0; text-align: right; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#map { position: absolute; top: 34px; left: 0; right: 0; bottom: 0; }
+#map.selecting, #map.picking { cursor: crosshair; }
+.leaflet-container { background: var(--vscode-editor-background); }
+.leaflet-container a { color: inherit; }

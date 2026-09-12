@@ -9,10 +9,11 @@ import { completionContext, MemberType } from './completion';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
-import { downloadCommand, overpassCommand } from './download';
+import { downloadArea, downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
 import { checkConflictsCommand, exportOsmCommand, showOscCommand } from './changes';
 import { revertCommand } from './revert';
+import { MapPanel } from './mapview';
 import { AccountStatus, Auth, accountCommand, loginCommand, logoutCommand } from './auth';
 import { uploadCommand } from './upload';
 
@@ -619,6 +620,12 @@ export function activate(context: vscode.ExtensionContext): void {
     overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
     maxObjects: config().get<number>('maxObjects', 500),
     state: context.globalState,
+    mapBbox: () => MapPanel.bbox(context),
+  });
+  const mapOptions = () => ({
+    tileUrl: config().get<string>('map.tileUrl', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+    attribution: config().get<string>('map.attribution', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+    maxZoom: config().get<number>('map.maxZoom', 19),
   });
 
   const changesOptions = () => ({
@@ -641,6 +648,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('level0l.checkConflicts', () => checkConflictsCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.exportOsm', () => exportOsmCommand(osm, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.showMap', () =>
+      MapPanel.show(context, mapOptions, { downloadArea: (bbox) => downloadArea(osm, bbox, downloadOptions(), log) }, log)
+    ),
     vscode.commands.registerCommand('level0l.revert', () => revertCommand(osm, apiBase(), log)),
     vscode.commands.registerCommand('level0l.login', () => loginCommand(auth, apiBase(), changesOptions().clientId)),
     vscode.commands.registerCommand('level0l.logout', () => logoutCommand(auth, apiBase())),

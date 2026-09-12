@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New command "Level0L: Show map": a Leaflet map beside the editor with the objects of the document, following the cursor and jumping to objects on click; an area can be selected for download and for `{{bbox}}` in Overpass queries, and a point picked for node coordinates. Settings `level0l.map.tileUrl`, `level0l.map.attribution`, `level0l.map.maxZoom`. Leaflet 1.9.4 (BSD-2-Clause) is bundled.
+
 ## 0.2.0
 
 The editor now talks to OpenStreetMap. Nothing is stored outside the document: it carries ids and versions, and the server is asked for the rest when a command runs, so a file can be checked or uploaded later or elsewhere.

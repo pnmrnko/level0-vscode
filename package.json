@@ -121,6 +121,21 @@
           "default": "https://overpass-api.de/api/interpreter",
           "description": "Overpass API endpoint used by \"Run Overpass query\"."
         },
+        "level0l.map.tileUrl": {
+          "type": "string",
+          "default": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "description": "Tile URL template of the map panel. Alternatives: https://tile.openstreetmap.org.ua/styles/osm-bright/{z}/{x}/{y}.png (Ukrainian community, also positron-gl-style and dark-matter-gl-style), https://tile.openstreetmap.de/{z}/{x}/{y}.png, https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png."
+        },
+        "level0l.map.attribution": {
+          "type": "string",
+          "default": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+          "description": "Attribution shown on the map, HTML allowed."
+        },
+        "level0l.map.maxZoom": {
+          "type": "integer",
+          "default": 19,
+          "description": "Highest zoom level the tile server offers."
+        },
         "level0l.maxObjects": {
           "type": "integer",
           "default": 500,
@@ -168,6 +183,12 @@
         "category": "Level0L"
       },
       {
+        "command": "level0l.showMap",
+        "title": "Show map",
+        "category": "Level0L",
+        "icon": "$(map)"
+      },
+      {
         "command": "level0l.revert",
         "title": "Revert object to the server version",
         "category": "Level0L"
@@ -194,6 +215,13 @@
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "level0l.showMap",
+          "when": "editorLangId == level0l",
+          "group": "navigation"
+        }
+      ],
       "commandPalette": [
         {
           "command": "level0l.stripMemberComments",
