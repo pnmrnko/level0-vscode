@@ -11,6 +11,7 @@ import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
 import { downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
+import { checkConflictsCommand, showOscCommand } from './changes';
 
 function config() {
   return vscode.workspace.getConfiguration('level0l');
@@ -617,6 +618,8 @@ export function activate(context: vscode.ExtensionContext): void {
     state: context.globalState,
   });
 
+  const changesOptions = () => ({ apiBase: downloadOptions().apiBase, generator: `level0-vscode ${version}` });
+
   const selector: vscode.DocumentSelector = { language: 'level0l' };
   const diagnostics = new Level0Diagnostics(taginfo, log);
   const references = new Level0References();
@@ -628,6 +631,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerTextEditorCommand('level0l.stripMemberComments', stripMemberComments),
     vscode.commands.registerCommand('level0l.download', () => downloadCommand(osm, downloadOptions(), log)),
     vscode.commands.registerCommand('level0l.runOverpass', () => overpassCommand(osm, downloadOptions(), log)),
+    vscode.commands.registerCommand('level0l.checkConflicts', () => checkConflictsCommand(osm, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),

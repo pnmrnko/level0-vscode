@@ -4,6 +4,8 @@
 
 - New command "Level0L: Download from OSM": objects, changesets, map areas and Overpass results are fetched from the API and appended to the document as Level0L text, with the same input forms Level0 accepts. Settings `level0l.osmApiUrl` and `level0l.maxObjects`.
 - New command "Level0L: Run Overpass query": runs the selection, an `.overpassql` file or a typed query and adds the result to the document; `{{bbox}}` is the extent of the document. Files `.overpassql` are recognized as Overpass QL. Setting `level0l.overpassUrl`.
+- New commands "Level0L: Check for conflicts with the server" and "Level0L: Show osmChange": the document is compared with the current server state, conflicts are written into it as Level0 does, and the osmChange an upload would send can be previewed and saved as `.osc`.
+- Overpass: a busy server and 429/406 answers get plain messages, queries run one at a time.
 
 ## 0.1.1
 

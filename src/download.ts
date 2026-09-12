@@ -85,7 +85,22 @@ async function fetchUrls(client: OsmClient, urls: string[], opts: DownloadOption
   );
 }
 
+// Public instances ask for one query at a time per application.
+let queryRunning = false;
+
 async function fetchOverpass(client: OsmClient, query: string, opts: DownloadOptions, log: vscode.OutputChannel): Promise<Fetched> {
+  if (queryRunning) {
+    throw new Error('another query is still running');
+  }
+  queryRunning = true;
+  try {
+    return await fetchOverpassNow(client, query, opts, log);
+  } finally {
+    queryRunning = false;
+  }
+}
+
+async function fetchOverpassNow(client: OsmClient, query: string, opts: DownloadOptions, log: vscode.OutputChannel): Promise<Fetched> {
   return vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: 'Running Overpass query', cancellable: false },
     async () => {

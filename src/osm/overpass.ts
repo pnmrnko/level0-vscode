@@ -96,15 +96,20 @@ export function prepareQuery(query: string, bbox?: Bbox): { query: string } | { 
 export function overpassError(status: number, body: string): string | undefined {
   const remark = /<remark>([\s\S]*?)<\/remark>/.exec(body);
   if (remark) {
-    return unescapeXml(remark[1].trim());
+    const text = unescapeXml(remark[1].trim());
+    // The dispatcher found no free slot to read the database.
+    if (/Dispatcher_Client::request_read_and_idx::timeout|too busy/.test(text)) {
+      return 'The Overpass server is busy; try again in a minute or set level0l.overpassUrl to another instance';
+    }
+    return text;
   }
   if (status >= 400) {
     const lines = [...body.matchAll(/<p><strong[^>]*>Error<\/strong>:([\s\S]*?)<\/p>/g)].map((m) => unescapeXml(m[1].replace(/<[^>]+>/g, '').trim()));
     if (lines.length) {
       return lines.join('; ');
     }
-    if (status === 429) {
-      return 'Too many requests: the server asks to wait before the next query';
+    if (status === 429 || status === 406) {
+      return `HTTP ${status}: the server asks to wait 30 seconds before the next query`;
     }
     if (status === 504) {
       return 'Gateway timeout: the server is overloaded, try again later';

@@ -29,7 +29,8 @@ test('server errors: remark, HTML error page, status codes', () => {
   assert.equal(overpassError(200, '<osm><remark> runtime error: Query timed out in "query" at line 1 after 26 seconds. </remark></osm>'), 'runtime error: Query timed out in "query" at line 1 after 26 seconds.');
   const html = '<html><body><p><strong style="color:#FF0000">Error</strong>: line 1: parse error: Unknown type "nodee" </p>\n<p><strong style="color:#FF0000">Error</strong>: line 1: parse error: Unknown token "(" </p></body></html>';
   assert.equal(overpassError(400, html), 'line 1: parse error: Unknown type "nodee"; line 1: parse error: Unknown token "("');
-  assert.match(overpassError(429, '')!, /Too many requests/);
+  assert.match(overpassError(429, '')!, /wait 30 seconds/);
+  assert.match(overpassError(504, '<osm><remark> runtime error: open64: 0 Success /osm3s_osm_base Dispatcher_Client::request_read_and_idx::timeout. The server is probably too busy to handle your request. </remark></osm>')!, /server is busy/);
   assert.equal(overpassError(200, '<osm><node id="1" lat="1" lon="1"/></osm>'), undefined);
 });
 

@@ -145,12 +145,30 @@
         "command": "level0l.runOverpass",
         "title": "Run Overpass query",
         "category": "Level0L"
+      },
+      {
+        "command": "level0l.checkConflicts",
+        "title": "Check for conflicts with the server",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.showOsc",
+        "title": "Show osmChange",
+        "category": "Level0L"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "level0l.stripMemberComments",
+          "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.checkConflicts",
+          "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.showOsc",
           "when": "editorLangId == level0l"
         }
       ]
