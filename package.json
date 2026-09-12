@@ -1,0 +1,79 @@
+{
+  "name": "level0l",
+  "displayName": "Level0L",
+  "description": "Syntax highlighting and OSM links for the Level0L OpenStreetMap editing format",
+  "version": "0.1.0",
+  "publisher": "spnmrnko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spnmrnko/level0-vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "openstreetmap",
+    "osm",
+    "level0"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "level0l",
+        "aliases": [
+          "Level0L",
+          "level0l"
+        ],
+        "extensions": [
+          ".l0l",
+          ".level0"
+        ],
+        "firstLine": "^\\s*[!-]*(node|way|relation|changeset)\\b",
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "level0l",
+        "scopeName": "source.level0l",
+        "path": "./syntaxes/level0l.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Level0L",
+      "properties": {
+        "level0l.osmBaseUrl": {
+          "type": "string",
+          "default": "https://www.openstreetmap.org",
+          "description": "Base URL of the OSM website used for object and map links."
+        },
+        "level0l.wikiBaseUrl": {
+          "type": "string",
+          "default": "https://wiki.openstreetmap.org/wiki",
+          "description": "Base URL of the OSM wiki used for tag key/value links."
+        },
+        "level0l.tagLinks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Turn tag keys and values into links to their OSM wiki pages."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
