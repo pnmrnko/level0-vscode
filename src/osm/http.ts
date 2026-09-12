@@ -11,6 +11,8 @@ export interface Response {
   statusText: string;
   headers: http.IncomingHttpHeaders;
   body: string;
+  // The bytes, when asked for with the binary option.
+  raw?: Buffer;
 }
 
 export interface RequestOptions {
@@ -18,6 +20,7 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   body?: string;
   timeoutMs?: number;
+  binary?: boolean;
 }
 
 const MAX_REDIRECTS = 3;
@@ -63,7 +66,10 @@ function requestOnce(url: string, opts: RequestOptions, redirects = 0): Promise<
       }
       const chunks: Buffer[] = [];
       res.on('data', (c: Buffer) => chunks.push(c));
-      res.on('end', () => resolve({ status, statusText: res.statusMessage ?? '', headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
+      res.on('end', () => {
+        const raw = Buffer.concat(chunks);
+        resolve({ status, statusText: res.statusMessage ?? '', headers: res.headers, body: opts.binary ? '' : raw.toString('utf8'), raw: opts.binary ? raw : undefined });
+      });
       res.on('error', reject);
     });
     const timeout = opts.timeoutMs ?? 180000;

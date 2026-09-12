@@ -69,7 +69,7 @@ Public Overpass instances with global coverage, from the [OSM wiki](https://wiki
 | `https://overpass.private.coffee/api/interpreter` | No rate limit; large projects should notify support@private.coffee. Formerly overpass.kumi.systems. |
 | `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | No request limitations, run by VK Maps. |
 
-Tile servers for the map panel. The default is the standard OSM map, whose [usage policy](https://operations.osmfoundation.org/policies/tiles/) allows light use by applications like this; the browser inside VS Code identifies itself. Alternatives, each with its own attribution to put into `level0l.map.attribution`:
+Tile servers for the map panel. Tiles are fetched by the extension with its `level0-vscode/<version>` User-Agent and handed to the map, since the browser inside VS Code sends neither an identifying User-Agent nor a Referer and the standard OSM tile server rejects such requests; the default is that standard map, whose [usage policy](https://operations.osmfoundation.org/policies/tiles/) allows light use by identified applications. Tiles are cached in memory for the session. Alternatives, each with its own attribution to put into `level0l.map.attribution`:
 
 | Tile URL | Notes |
 | --- | --- |

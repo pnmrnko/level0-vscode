@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import { randomBytes } from 'node:crypto';
 import { Bounds, mapData, objectAtLine } from './geometry';
 import { Entity, parse } from './parser';
+import { TileCache } from './tiles';
 
 export interface MapOptions {
   tileUrl: string;
@@ -19,6 +20,7 @@ export interface MapOptions {
 
 export interface MapEvents {
   downloadArea(bbox: Bounds): Promise<void>;
+  tiles: TileCache;
 }
 
 const BBOX_KEY = 'level0l.mapBbox';
@@ -112,6 +114,7 @@ export class MapPanel {
   }
 
   private sendInit(): void {
+    this.events.tiles.clear();
     this.post({ type: 'init', ...this.options() });
   }
 
@@ -148,6 +151,12 @@ export class MapPanel {
       case 'point':
         await this.insertPoint(m.lat as number, m.lon as number);
         break;
+      case 'tile': {
+        const t = m as unknown as { key: string; z: number; x: number; y: number };
+        const src = await this.events.tiles.get(this.options().tileUrl, t);
+        this.post({ type: 'tile', key: t.key, src });
+        break;
+      }
     }
   }
 

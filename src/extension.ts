@@ -14,6 +14,7 @@ import { OsmClient } from './osm/client';
 import { checkConflictsCommand, exportOsmCommand, showOscCommand } from './changes';
 import { revertCommand } from './revert';
 import { MapPanel } from './mapview';
+import { TileCache } from './tiles';
 import { AccountStatus, Auth, accountCommand, loginCommand, logoutCommand } from './auth';
 import { uploadCommand } from './upload';
 
@@ -615,6 +616,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const apiBase = () => config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/');
   const osm = new OsmClient({ userAgent, token: () => auth.token(apiBase()) });
   const status = new AccountStatus(auth, apiBase);
+  const tiles = new TileCache(userAgent);
   const downloadOptions = () => ({
     apiBase: apiBase(),
     overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
@@ -649,7 +651,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.exportOsm', () => exportOsmCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.showMap', () =>
-      MapPanel.show(context, mapOptions, { downloadArea: (bbox) => downloadArea(osm, bbox, downloadOptions(), log) }, log)
+      MapPanel.show(context, mapOptions, { downloadArea: (bbox) => downloadArea(osm, bbox, downloadOptions(), log), tiles }, log)
     ),
     vscode.commands.registerCommand('level0l.revert', () => revertCommand(osm, apiBase(), log)),
     vscode.commands.registerCommand('level0l.login', () => loginCommand(auth, apiBase(), changesOptions().clientId)),

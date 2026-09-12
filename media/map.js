@@ -8,6 +8,19 @@
   const map = L.map('map', { zoomControl: true, attributionControl: true });
   map.attributionControl.setPrefix('');
   let tiles;
+  // Tiles come through the extension, which sends the User-Agent tile
+  // servers require; the webview asks for each and gets a data: URI back.
+  const pendingTiles = new Map();
+  const ProxiedTiles = L.TileLayer.extend({
+    createTile(coords, done) {
+      const img = document.createElement('img');
+      img.alt = '';
+      const key = `${coords.z}/${coords.x}/${coords.y}`;
+      pendingTiles.set(key, { img, done });
+      post({ type: 'tile', key, z: coords.z, x: coords.x, y: coords.y });
+      return img;
+    },
+  });
   let box; // L.Rectangle of the selected area
   let mode = ''; // '', 'select', 'pick'
   const ways = L.layerGroup().addTo(map);
@@ -200,7 +213,7 @@
       if (tiles) {
         tiles.remove();
       }
-      tiles = L.tileLayer(m.tileUrl, { attribution: m.attribution, maxZoom: m.maxZoom || 19 }).addTo(map);
+      tiles = new ProxiedTiles('', { attribution: m.attribution, maxZoom: m.maxZoom || 19 }).addTo(map);
       if (state.box) {
         setBox(L.latLngBounds(state.box));
       }
@@ -219,6 +232,19 @@
       applyFocus(changed);
     } else if (m.type === 'fit') {
       fitData();
+    } else if (m.type === 'tile') {
+      const p = pendingTiles.get(m.key);
+      pendingTiles.delete(m.key);
+      if (!p) {
+        return;
+      }
+      if (!m.src) {
+        p.done(new Error('tile'), p.img);
+        return;
+      }
+      p.img.onload = () => p.done(null, p.img);
+      p.img.onerror = () => p.done(new Error('tile'), p.img);
+      p.img.src = m.src;
     }
   });
 
