@@ -68,14 +68,15 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
           url: `${osm}/${type}/${id}`,
           tooltip: `Open ${type} ${id} on OSM`,
         });
-        // The version number opens that exact version, which may differ
-        // from the current one on the server.
+        // The version opens that exact version, which may differ from the
+        // current one on the server. The range includes the dot so the two
+        // links underline "id.version" as one piece.
         if (version && type !== 'changeset') {
-          const vStart = start + id.length + 1;
+          const vStart = start + id.length;
           links.push({
             line: lineNo,
             start: vStart,
-            end: vStart + version.length,
+            end: vStart + 1 + version.length,
             url: `${osm}/${type}/${id}/history/${version}`,
             tooltip: `Open version ${version} of ${type} ${id}`,
           });
