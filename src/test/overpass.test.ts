@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { formatBbox, hasMeta, isOverpassQuery, overpassError, parseBbox, prepareQuery } from '../osm/overpass';
+import { formatBbox, hasBboxPlaceholder, hasMeta, isOverpassQuery, overpassError, parseBbox, prepareQuery, stripComments } from '../osm/overpass';
 
 const BOX = { south: 50.44, west: 30.51, north: 50.46, east: 30.54 };
 
@@ -45,4 +45,11 @@ test('typed bounding boxes', () => {
   assert.equal(parseBbox('50.46,30.51,50.44,30.54', 0.001), undefined);
   assert.equal(parseBbox('abc', 0.001), undefined);
   assert.equal(parseBbox('1,2,3', 0.001), undefined);
+});
+
+test('comments do not take part in the query', () => {
+  const q = '// {{bbox}} in a comment\n/* [out:json] {{geocodeArea:x}} */\nnwr["website"~"https://"](1,2,3,4); out meta; // trailing';
+  assert.equal(stripComments(q), '\n\nnwr["website"~"https://"](1,2,3,4); out meta; ');
+  assert.equal(hasBboxPlaceholder(q), false);
+  assert.deepEqual(prepareQuery(q), { query: 'nwr["website"~"https://"](1,2,3,4); out meta;' });
 });

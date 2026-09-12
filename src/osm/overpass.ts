@@ -11,6 +11,33 @@ export interface Bbox {
   east: number;
 }
 
+// Removes // and /* */ comments, leaving quoted strings alone. Comments are
+// meaningless to the server and must not take part in shortcut detection.
+export function stripComments(query: string): string {
+  let out = '';
+  let i = 0;
+  while (i < query.length) {
+    const c = query[i];
+    const next = query[i + 1];
+    if (c === '"' || c === "'") {
+      const end = query.indexOf(c, i + 1);
+      const stop = end < 0 ? query.length : end + 1;
+      out += query.slice(i, stop);
+      i = stop;
+    } else if (c === '/' && next === '/') {
+      const end = query.indexOf('\n', i);
+      i = end < 0 ? query.length : end;
+    } else if (c === '/' && next === '*') {
+      const end = query.indexOf('*/', i + 2);
+      i = end < 0 ? query.length : end + 2;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
+}
+
 // A query rather than a URL or object list: has an "out" statement.
 export function isOverpassQuery(s: string): boolean {
   return !/^https?:\/\//i.test(s.trim()) && /\bout\b[^;]*;/.test(s);
@@ -33,7 +60,7 @@ export function parseBbox(s: string, radius: number): Bbox | undefined {
 }
 
 export function hasBboxPlaceholder(query: string): boolean {
-  return /\{\{\s*bbox\s*\}\}/.test(query);
+  return /\{\{\s*bbox\s*\}\}/.test(stripComments(query));
 }
 
 export function formatBbox(b: Bbox): string {
@@ -44,7 +71,7 @@ export function formatBbox(b: Bbox): string {
 // {{bbox}}, which becomes "south,west,north,east" as in overpass turbo. The
 // output format must be XML since that is what the reader parses.
 export function prepareQuery(query: string, bbox?: Bbox): { query: string } | { error: string } {
-  const q = query.trim();
+  const q = stripComments(query).trim();
   const format = /\[\s*out\s*:\s*(\w+)/.exec(q);
   if (format && format[1] !== 'xml') {
     return { error: `Only XML output can be read; remove [out:${format[1]}] from the query` };
