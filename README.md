@@ -8,7 +8,7 @@ Editor support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the t
 - Clickable links (Ctrl/Cmd+click):
   - object IDs in entity headers and in `nd` / `wy` / `rel` members open the object on openstreetmap.org;
   - node coordinates open the map at that location;
-  - tag keys open `Key:*` wiki pages, simple enumerated values open `Tag:*=*` pages.
+  - tag keys and simple enumerated values open their wiki page. The target is resolved on click through taginfo: the page in your language when it exists, the English page otherwise, and the taginfo key or tag page when there is no wiki page at all, so a click never lands on a missing page. Without taginfo (setting off, offline) the link goes to the English wiki page.
 - Hovers backed by [taginfo](https://taginfo.openstreetmap.org/): hover a tag key or value to see its wiki description in your language, approval status (obsolete and deprecated tags are flagged), usage counts by object type, top values for a key, what object types the tag applies to and commonly combined tags. Keys and tags taginfo has never seen are flagged as possible typos. Responses are cached for a day; tags inside the `changeset` block are ignored.
 - Line comments with `#`, indentation-based folding of entities.
 

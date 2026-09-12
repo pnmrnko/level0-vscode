@@ -13,8 +13,13 @@ export interface TextLink {
   line: number;
   start: number;
   end: number;
+  // Static target. For wiki links it is the fallback used when the target
+  // cannot be resolved (offline, taginfo error).
   url: string;
   tooltip: string;
+  // Present on tag key/value links: the caller may resolve the final target
+  // lazily, e.g. to a localized wiki page or to taginfo when no page exists.
+  wiki?: { key: string; value?: string };
 }
 
 const MEMBER_TYPES: Record<string, string> = { nd: 'node', wy: 'way', rel: 'relation' };
@@ -23,10 +28,10 @@ function trimSlash(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
-// Wiki page titles keep ':' readable; everything else that is unsafe in a URL
-// path gets percent-encoded.
+// Wiki page titles keep ':' and '=' readable; everything else that is unsafe
+// in a URL path gets percent-encoded. Spaces become underscores as on the wiki.
 export function wikiTitle(s: string): string {
-  return encodeURIComponent(s).replace(/%3A/gi, ':');
+  return encodeURIComponent(s.replace(/ /g, '_')).replace(/%3A/gi, ':').replace(/%3D/gi, '=');
 }
 
 // Values that look like a plain enumerated value (lowercase identifier), as
@@ -108,6 +113,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
         end: tag.keyEnd,
         url: `${wiki}/Key:${wikiTitle(tag.key)}`,
         tooltip: `Key:${tag.key} on the OSM wiki`,
+        wiki: { key: tag.key },
       });
 
       if (isEnumValue(tag.value)) {
@@ -117,6 +123,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
           end: tag.valueEnd,
           url: `${wiki}/Tag:${wikiTitle(tag.key)}=${wikiTitle(tag.value)}`,
           tooltip: `Tag:${tag.key}=${tag.value} on the OSM wiki`,
+          wiki: { key: tag.key, value: tag.value },
         });
       }
     }

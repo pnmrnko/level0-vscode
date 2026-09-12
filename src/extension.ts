@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
 import { enclosingEntity, parseTagLine } from './lines';
-import { extractLinks, isEnumValue, LinkOptions } from './links';
-import { TaginfoClient } from './taginfo';
+import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
+import { pickWikiPage, TaginfoClient } from './taginfo';
 
 function config() {
   return vscode.workspace.getConfiguration('level0l');
@@ -33,14 +33,57 @@ function hoverOptions(): HoverOptions {
   };
 }
 
+// Wiki links are returned without a target and resolved on click: taginfo
+// tells whether a wiki page exists (and in which languages), so the click can
+// go to the localized page, or to the taginfo page when there is none. Object
+// and map links have static targets.
+class WikiLink extends vscode.DocumentLink {
+  constructor(range: vscode.Range, public fallback: string, public key: string, public value?: string) {
+    super(range);
+  }
+}
+
 class Level0LinkProvider implements vscode.DocumentLinkProvider {
+  constructor(private taginfo: () => TaginfoClient, private log: vscode.OutputChannel) {}
+
   provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
+    const lazy = config().get<boolean>('taginfo.enabled', true);
     return extractLinks(document.getText(), linkOptions()).map((l) => {
       const range = new vscode.Range(l.line, l.start, l.line, l.end);
-      const link = new vscode.DocumentLink(range, vscode.Uri.parse(l.url));
+      const link =
+        lazy && l.wiki
+          ? new WikiLink(range, l.url, l.wiki.key, l.wiki.value)
+          : new vscode.DocumentLink(range, vscode.Uri.parse(l.url));
       link.tooltip = l.tooltip;
       return link;
     });
+  }
+
+  async resolveDocumentLink(link: vscode.DocumentLink): Promise<vscode.DocumentLink> {
+    if (!(link instanceof WikiLink)) {
+      return link;
+    }
+    try {
+      link.target = vscode.Uri.parse(await this.resolveTarget(link.key, link.value));
+    } catch (err) {
+      this.log.appendLine(`link resolve failed: ${err instanceof Error ? err.message : String(err)}`);
+      link.target = vscode.Uri.parse(link.fallback);
+    }
+    return link;
+  }
+
+  private async resolveTarget(key: string, value?: string): Promise<string> {
+    const client = this.taginfo();
+    const opts = hoverOptions();
+    const pages = value === undefined ? await client.keyWikiPages(key) : await client.tagWikiPages(key, value);
+    const { page } = pickWikiPage(pages, opts.lang);
+    if (page) {
+      return `${opts.wikiBaseUrl.replace(/\/+$/, '')}/${wikiTitle(page.title)}`;
+    }
+    const taginfo = opts.taginfoBaseUrl.replace(/\/+$/, '');
+    return value === undefined
+      ? `${taginfo}/keys/${encodeURIComponent(key)}`
+      : `${taginfo}/tags/${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
   }
 }
 
@@ -133,7 +176,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const selector: vscode.DocumentSelector = { language: 'level0l' };
   context.subscriptions.push(
     log,
-    vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider()),
+    vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log))
   );
 }
