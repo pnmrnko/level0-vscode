@@ -160,7 +160,7 @@ relation -8
 
 
 # ---------------------------------------------------------------------------
-# Conflict marker (blocks upload). Level0 itself writes this when the object was changed on the server between download and upload: your edits are preserved in a comment, the current server version follows with "!" before the type. Upload is refused until you merge the edits and remove the "!".
+# Conflict marker (blocks upload). Level0 itself writes this when the object was changed on the server between download and upload: your edits are preserved in a comment, the current server version follows with "!" before the type. Upload is refused until you merge the edits and remove the "!". The extension shows the two blocks with the same backgrounds VS Code uses for the two sides of a git merge conflict.
 
 # Conflict! Your edits to the old version are saved in this comment.
 # Please make appropriate changes and remove '!' character from the entity header.

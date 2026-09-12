@@ -4,7 +4,7 @@ Editor support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the t
 
 ## Features
 
-- Syntax highlighting for entity headers (`node`, `way`, `relation`, `changeset`), IDs and versions, coordinates, tags, way nodes and relation members, comments. Negative (new) IDs, the delete prefix `-` and the conflict marker `!` get their own scopes so themes can make them stand out. Object versions are drawn at reduced opacity, in the theme's own color, since they are metadata rather than something to edit. Lines the Level0 parser would reject are marked as invalid.
+- Syntax highlighting for entity headers (`node`, `way`, `relation`, `changeset`), IDs and versions, coordinates, tags, way nodes and relation members, comments. Negative (new) IDs, the delete prefix `-` and the conflict marker `!` get their own scopes so themes can make them stand out. Object versions are drawn at reduced opacity, in the theme's own color, since they are metadata rather than something to edit. A conflict written by Level0 is shown like a git merge conflict: the comment block holding your edits gets the theme's "current" background, the `!` entity with the server version the "incoming" background. Lines the Level0 parser would reject are marked as invalid.
 - Clickable links (Ctrl/Cmd+click):
   - object IDs in entity headers and in `nd` / `wy` / `rel` members open the object on openstreetmap.org; the version number after the dot opens that exact version (`way 123.4` links `4` to `/way/123/history/4`), useful when the server has moved on since the download;
   - node coordinates open the map at that location;

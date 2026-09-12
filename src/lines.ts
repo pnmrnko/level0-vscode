@@ -80,3 +80,41 @@ export function versionSpans(text: string): Span[] {
   });
   return out;
 }
+
+export interface LineRange {
+  startLine: number;
+  endLine: number;
+}
+
+export interface Conflict {
+  // Comment block Level0 wrote right above the header, holding the user's
+  // edits to the previous version. Absent when the file was edited by hand.
+  current?: LineRange;
+  // The entity marked with "!": the server version, header to last member.
+  incoming: LineRange;
+}
+
+export function conflictSpans(text: string): Conflict[] {
+  const lines = text.split(/\r?\n/);
+  const out: Conflict[] = [];
+  lines.forEach((line, i) => {
+    if (!line.startsWith('!') || !HEADER_RE.test(line)) {
+      return;
+    }
+    // Body: the tag and member lines that follow, up to the first blank
+    // line, comment or header.
+    let end = i;
+    while (end + 1 < lines.length && !isBlankOrComment(lines[end + 1]) && !HEADER_RE.test(lines[end + 1])) {
+      end++;
+    }
+    let start = i;
+    while (start > 0 && lines[start - 1].startsWith('#')) {
+      start--;
+    }
+    out.push({
+      current: start < i ? { startLine: start, endLine: i - 1 } : undefined,
+      incoming: { startLine: i, endLine: end },
+    });
+  });
+  return out;
+}

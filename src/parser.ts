@@ -98,7 +98,7 @@ export function parse(text: string): ParseResult {
       };
       const typeStart = line.indexOf(type);
       if (cur.conflict) {
-        report(ln, 'error', `Please resolve conflict of ${type} ${cur.id}`, 0, 1);
+        report(ln, 'error', `Please resolve conflict of ${type} ${cur.id}`);
       }
       if (cur.deleted && Number(cur.id) <= 0) {
         report(ln, 'error', 'Deleting an unsaved object', typeStart - 1, typeStart);

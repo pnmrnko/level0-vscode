@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
-import { enclosingEntity, parseTagLine, versionSpans } from './lines';
+import { conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { checkTags } from './tagcheck';
@@ -241,14 +241,32 @@ class Level0Diagnostics {
 // reduced opacity in whatever color the theme gives them.
 const versionDecoration = vscode.window.createTextEditorDecorationType({ opacity: '0.55' });
 
-function decorateVersions(editor: vscode.TextEditor | undefined): void {
+// A conflict written by Level0 looks like a merge conflict: the comment block
+// with the user's edits and the "!" entity with the server version get the
+// backgrounds VS Code uses for the current and incoming sides of a git
+// conflict, so every theme has colors for them.
+const currentDecoration = vscode.window.createTextEditorDecorationType({
+  isWholeLine: true,
+  backgroundColor: new vscode.ThemeColor('merge.currentContentBackground'),
+});
+const incomingDecoration = vscode.window.createTextEditorDecorationType({
+  isWholeLine: true,
+  backgroundColor: new vscode.ThemeColor('merge.incomingContentBackground'),
+});
+
+function decorate(editor: vscode.TextEditor | undefined): void {
   if (!editor || editor.document.languageId !== 'level0l') {
     return;
   }
+  const text = editor.document.getText();
   editor.setDecorations(
     versionDecoration,
-    versionSpans(editor.document.getText()).map((s) => new vscode.Range(s.line, s.start, s.line, s.end))
+    versionSpans(text).map((s) => new vscode.Range(s.line, s.start, s.line, s.end))
   );
+  const conflicts = conflictSpans(text);
+  const lineRange = (r: { startLine: number; endLine: number }) => new vscode.Range(r.startLine, 0, r.endLine, 0);
+  editor.setDecorations(currentDecoration, conflicts.filter((c) => c.current).map((c) => lineRange(c.current!)));
+  editor.setDecorations(incomingDecoration, conflicts.map((c) => lineRange(c.incoming)));
 }
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -280,12 +298,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     versionDecoration,
+    currentDecoration,
+    incomingDecoration,
     vscode.workspace.onDidOpenTextDocument((d) => diagnostics.refresh(d)),
     vscode.workspace.onDidChangeTextDocument((e) => {
       diagnostics.refresh(e.document);
-      vscode.window.visibleTextEditors.filter((ed) => ed.document === e.document).forEach(decorateVersions);
+      vscode.window.visibleTextEditors.filter((ed) => ed.document === e.document).forEach(decorate);
     }),
-    vscode.window.onDidChangeVisibleTextEditors((editors) => editors.forEach(decorateVersions)),
+    vscode.window.onDidChangeVisibleTextEditors((editors) => editors.forEach(decorate)),
     vscode.workspace.onDidCloseTextDocument((d) => diagnostics.clear(d)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('level0l')) {
@@ -294,7 +314,7 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
   vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
-  vscode.window.visibleTextEditors.forEach(decorateVersions);
+  vscode.window.visibleTextEditors.forEach(decorate);
 }
 
 export function deactivate(): void {}
