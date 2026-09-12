@@ -53,6 +53,29 @@ export interface WikiPage {
   tags_linked: string[];
 }
 
+export interface KeyValue {
+  value: string;
+  count: number;
+  fraction: number;
+  in_wiki: boolean;
+  description?: string;
+}
+
+export interface KeyInfo {
+  key: string;
+  count_all: number;
+  in_wiki: boolean;
+}
+
+export interface RelationRole {
+  rtype: string;
+  role: string;
+  count_all_members: number;
+  count_node_members: number;
+  count_way_members: number;
+  count_relation_members: number;
+}
+
 interface Envelope<T> {
   url: string;
   data_until: string;
@@ -83,6 +106,37 @@ export class TaginfoClient {
 
   tagWikiPages(key: string, value: string): Promise<WikiPage[]> {
     return this.get<WikiPage[]>('tag/wiki_pages', { key, value });
+  }
+
+  // Most used values of a key, optionally narrowed to those containing
+  // `query`. Paging parameters are mandatory on this endpoint.
+  keyValues(key: string, lang: string, query = '', rp = 50): Promise<KeyValue[]> {
+    const params: Record<string, string> = { key, lang, page: '1', rp: String(rp), sortname: 'count', sortorder: 'desc' };
+    if (query) {
+      params.query = query;
+    }
+    return this.get<KeyValue[]>('key/values', params);
+  }
+
+  // Most used keys, optionally those containing `query`.
+  keys(query = '', rp = 50): Promise<KeyInfo[]> {
+    const params: Record<string, string> = { page: '1', rp: String(rp), sortname: 'count_all', sortorder: 'desc' };
+    if (query) {
+      params.query = query;
+    }
+    return this.get<KeyInfo[]>('keys/all', params);
+  }
+
+  // Member roles used with a relation type, most used first. Only
+  // count_all_members and role are accepted as sortname by this endpoint.
+  relationRoles(rtype: string, rp = 50): Promise<RelationRole[]> {
+    return this.get<RelationRole[]>('relation/roles', {
+      rtype,
+      page: '1',
+      rp: String(rp),
+      sortname: 'count_all_members',
+      sortorder: 'desc',
+    });
   }
 
   private get<T>(path: string, params: Record<string, string>): Promise<T> {

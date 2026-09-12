@@ -45,6 +45,7 @@ node 4294967296.3: 50.4501, 30.5234
 # - "name", "addr:street", "opening_hours" have free-text values, so only the key is linked and hovered; the value is not looked up as a tag.
 # - The first "=" separates key from value; further "=" belong to the value, as in the website tag. No escaping is needed in values.
 # - "#" inside a tag line is part of the value, not a comment (note tag).
+# - Completion: on a new indented line start typing a key; after "key = " the most used values follow with their share and description. Try adding "  cuisine = " under this node.
 # - Values that point somewhere link there instead of the wiki: Wikidata items (also namespaced keys such as brand:wikidata or name:etymology:wikidata), Wikipedia articles in the "lang:Title" form, Commons files and categories, websites, Mapillary and Panoramax pictures, social network accounts under contact:* whether given as a URL or a bare user name. Phone numbers become tel: links and e-mail addresses mailto: links, which macOS hands to the phone or mail app. Values separated by ";" get one link each.
 # - A key can itself contain "=" (rare, usually a mistake in the data). Level0 writes such a key with the "=" escaped as "\=" so it is not split, and unescapes it when reading. Not shown live here; do not use it on purpose.
 
@@ -101,7 +102,7 @@ way 987654322.1
 
 
 # ---------------------------------------------------------------------------
-# Relation: members are "nd", "wy" or "rel" followed by an id and an optional role. Relations must have at least one member. A role can be omitted; a role with spaces is taken verbatim to the end of the line.
+# Relation: members are "nd", "wy" or "rel" followed by an id and an optional role. Relations must have at least one member. A role can be omitted; a role with spaces is taken verbatim to the end of the line. Completion helps here: type "wy " to pick a way from this file, then a space to pick a role used with this relation type.
 
 relation 8675309.4
   type = multipolygon

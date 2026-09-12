@@ -5,6 +5,7 @@ import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { Index } from './refs';
 import { bodyEnd, foldingRanges, summarize } from './symbols';
+import { completionContext, MemberType } from './completion';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
@@ -243,6 +244,190 @@ class Level0References implements vscode.DefinitionProvider, vscode.ReferencePro
 
 }
 
+// Keys with more distinct values than this are free text; no value list.
+const ENUMERATED_KEY_MAX_VALUES = 20000;
+
+const CHANGESET_KEYS: [string, string][] = [
+  ['comment', 'What was changed and why. Required by Level0.'],
+  ['source', 'Where the information comes from: survey, local knowledge, an imagery name.'],
+  ['created_by', 'Editor that made the changeset; Level0 fills it in.'],
+  ['hashtags', 'Semicolon separated #hashtags for finding the changeset later.'],
+  ['review_requested', 'yes: ask other mappers to review this changeset.'],
+  ['bot', 'yes: the edit was made by an automated process.'],
+  ['import', 'yes: the changeset is part of an import.'],
+];
+
+const HEADER_SNIPPETS: [string, string, string][] = [
+  ['node', 'node -${1:1}: ${2:50.4501}, ${3:30.5234}\n  ${4:amenity} = ${5:cafe}', 'New node with coordinates and a tag'],
+  ['way', 'way -${1:1}\n  ${2:highway} = ${3:footway}\n  nd ${4:-1}\n  nd ${5:-2}', 'New way with a tag and two nodes'],
+  ['relation', 'relation -${1:1}\n  type = ${2:multipolygon}\n  wy ${3:-1} ${4:outer}', 'New relation with a type and a member'],
+  ['changeset', 'changeset\n  comment = ${1}\n  source = ${2:survey}', 'Changeset metadata'],
+];
+
+function count(n: number, lang: string): string {
+  return new Intl.NumberFormat(lang, { notation: 'compact' }).format(n);
+}
+
+// Completion of header keywords, tag keys, tag values, member ids and roles.
+// Keys and values come from taginfo, member ids from the document itself.
+class Level0Completion implements vscode.CompletionItemProvider {
+  constructor(private taginfo: () => TaginfoClient, private log: vscode.OutputChannel) {}
+
+  async provideCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position
+  ): Promise<vscode.CompletionList | undefined> {
+    const lines = document.getText().split(/\r?\n/);
+    const ctx = completionContext(lines, position.line, position.character);
+    if (!ctx) {
+      return undefined;
+    }
+    const range = new vscode.Range(position.line, ctx.start, position.line, position.character);
+    const online = config().get<boolean>('taginfo.enabled', true);
+    try {
+      switch (ctx.kind) {
+        case 'header':
+          return new vscode.CompletionList(this.headers(range));
+        case 'key':
+          return ctx.entity === 'changeset'
+            ? new vscode.CompletionList(this.changesetKeys(range))
+            : new vscode.CompletionList(await this.keys(document, ctx.partial, range, online), online);
+        case 'value':
+          return online && !isIdentifierKey(ctx.key)
+            ? new vscode.CompletionList(await this.values(ctx.key, ctx.partial, range), true)
+            : undefined;
+        case 'member-id':
+          return new vscode.CompletionList(this.memberIds(document, ctx.memberType, range));
+        case 'role':
+          return online && ctx.relationType
+            ? new vscode.CompletionList(await this.roles(ctx.relationType, ctx.memberType, range))
+            : undefined;
+      }
+    } catch (err) {
+      this.log.appendLine(`completion failed: ${err instanceof Error ? err.message : String(err)}`);
+      return undefined;
+    }
+  }
+
+  private headers(range: vscode.Range): vscode.CompletionItem[] {
+    return HEADER_SNIPPETS.map(([label, snippet, doc], i) => {
+      const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Snippet);
+      item.insertText = new vscode.SnippetString(snippet);
+      item.documentation = doc;
+      item.range = range;
+      item.sortText = String(i);
+      return item;
+    });
+  }
+
+  private changesetKeys(range: vscode.Range): vscode.CompletionItem[] {
+    return CHANGESET_KEYS.map(([key, doc], i) => this.keyItem(key, doc, range, String(i)));
+  }
+
+  private keyItem(key: string, doc: string, range: vscode.Range, sortText: string): vscode.CompletionItem {
+    const item = new vscode.CompletionItem(key, vscode.CompletionItemKind.Property);
+    item.insertText = `${key} = `;
+    item.documentation = doc;
+    item.range = range;
+    item.sortText = sortText;
+    // Go straight on to the value list.
+    item.command = { command: 'editor.action.triggerSuggest', title: 'Suggest values' };
+    return item;
+  }
+
+  private async keys(document: vscode.TextDocument, partial: string, range: vscode.Range, online: boolean) {
+    const lang = taginfoLang();
+    const items: vscode.CompletionItem[] = [];
+    const seen = new Set<string>();
+
+    // Keys already used in this file come first: they are the local vocabulary.
+    const { entities } = parse(document.getText());
+    for (const e of entities) {
+      if (e.type === 'changeset') {
+        continue;
+      }
+      for (const t of e.tags) {
+        if (!seen.has(t.key)) {
+          seen.add(t.key);
+          items.push(this.keyItem(t.key, 'Used in this file', range, `0${String(items.length).padStart(4, '0')}`));
+        }
+      }
+    }
+
+    if (online) {
+      const keys = await this.taginfo().keys(partial);
+      keys.forEach((k, i) => {
+        if (seen.has(k.key)) {
+          return;
+        }
+        const item = this.keyItem(k.key, k.in_wiki ? 'Documented on the wiki' : 'Not documented on the wiki', range, `1${String(i).padStart(4, '0')}`);
+        item.detail = `${count(k.count_all, lang)} uses`;
+        items.push(item);
+      });
+    }
+    return items;
+  }
+
+  private async values(key: string, partial: string, range: vscode.Range): Promise<vscode.CompletionItem[]> {
+    const client = this.taginfo();
+    const lang = taginfoLang();
+    const overview = await client.keyOverview(key);
+    const distinct = overview.counts.find((c) => c.type === 'all')?.values ?? 0;
+    if (distinct === 0 || distinct > ENUMERATED_KEY_MAX_VALUES) {
+      return [];
+    }
+    const lists = await Promise.all([
+      client.keyValues(key, lang),
+      partial.length >= 2 ? client.keyValues(key, lang, partial) : Promise.resolve([]),
+    ]);
+    const seen = new Set<string>();
+    const items: vscode.CompletionItem[] = [];
+    for (const v of [...lists[0], ...lists[1]]) {
+      if (seen.has(v.value)) {
+        continue;
+      }
+      seen.add(v.value);
+      const item = new vscode.CompletionItem(v.value, vscode.CompletionItemKind.EnumMember);
+      item.detail = `${Math.round(v.fraction * 100)}% · ${count(v.count, lang)}`;
+      if (v.description) {
+        item.documentation = v.description;
+      }
+      item.range = range;
+      item.sortText = String(items.length).padStart(4, '0');
+      items.push(item);
+    }
+    return items;
+  }
+
+  private memberIds(document: vscode.TextDocument, type: string, range: vscode.Range): vscode.CompletionItem[] {
+    const { entities } = parse(document.getText());
+    return entities
+      .filter((e) => e.type === type && e.idStart !== undefined)
+      .map((e, i) => {
+        const item = new vscode.CompletionItem(e.id, vscode.CompletionItemKind.Reference);
+        item.detail = summarize(e).detail;
+        item.range = range;
+        item.sortText = String(i).padStart(4, '0');
+        return item;
+      });
+  }
+
+  private async roles(rtype: string, memberType: MemberType, range: vscode.Range): Promise<vscode.CompletionItem[]> {
+    const lang = taginfoLang();
+    const roles = await this.taginfo().relationRoles(rtype);
+    const field = `count_${memberType}_members` as const;
+    return roles
+      .filter((r) => r.role !== '' && r[field] > 0)
+      .map((r, i) => {
+        const item = new vscode.CompletionItem(r.role, vscode.CompletionItemKind.Value);
+        item.detail = `${count(r[field], lang)} ${memberType} members`;
+        item.range = range;
+        item.sortText = String(i).padStart(4, '0');
+        return item;
+      });
+  }
+}
+
 const SYMBOL_KIND: Record<string, vscode.SymbolKind> = {
   changeset: vscode.SymbolKind.Package,
   node: vscode.SymbolKind.Variable,
@@ -419,6 +604,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerDefinitionProvider(selector, references),
     vscode.languages.registerReferenceProvider(selector, references),
     vscode.languages.registerDocumentSymbolProvider(selector, structure),
+    vscode.languages.registerCompletionItemProvider(selector, new Level0Completion(taginfo, log), '=', ' ', ';'),
     vscode.languages.registerFoldingRangeProvider(selector, structure),
     versionDecoration,
     currentDecoration,
