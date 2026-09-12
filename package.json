@@ -5,20 +5,32 @@
   "version": "0.1.0",
   "publisher": "spnmrnko",
   "license": "MIT",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/spnmrnko/level0-vscode"
+  },
+  "homepage": "https://github.com/spnmrnko/level0-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/spnmrnko/level0-vscode/issues"
+  },
+  "galleryBanner": {
+    "color": "#1f5f3b",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters",
+    "Other"
   ],
   "keywords": [
     "openstreetmap",
     "osm",
     "level0",
+    "level0l",
     "taginfo"
   ],
   "main": "./out/extension.js",

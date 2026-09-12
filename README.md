@@ -19,6 +19,10 @@ Editor support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the t
 
 Files are recognized by the `.l0l` and `.level0` extensions, or by a first line that starts with an entity header.
 
+## Installation
+
+From the VS Code Marketplace or Open VSX, search for "Level0L". To install a downloaded `.vsix` instead: Extensions view, the "..." menu, "Install from VSIX...", or `code --install-extension level0l-0.1.0.vsix`.
+
 ## Settings
 
 | Setting | Default | Description |
@@ -42,7 +46,7 @@ npm test
 
 `npm test` compiles and runs the unit tests of the parser, links, completion and outline modules with Node's built-in test runner; they need no VS Code and no network. Then press F5 in VS Code to launch an Extension Development Host with the `samples/` folder opened.
 
-To package a `.vsix`: `npx @vscode/vsce package`.
+To build a `.vsix`: `npx @vscode/vsce package`. Releases are published with `npx @vscode/vsce publish` (Marketplace) and `npx ovsx publish` (Open VSX).
 
 ## License
 

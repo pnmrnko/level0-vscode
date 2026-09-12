@@ -1,8 +1,12 @@
 .vscode/**
+.github/**
 src/**
+out/test/**
 samples/**
+images/icon.svg
 node_modules/**
 tsconfig.json
 .gitignore
+CONTRIBUTING.md
 **/*.map
-out/test/**
+*.vsix
