@@ -39,6 +39,8 @@ export interface Problem {
 
 export interface Plan {
   changeset?: OsmObject;
+  // Ids given to objects written without one, by header line.
+  zeroIds: Map<number, number>;
   changes: Change[];
   unchanged: Entity[];
   conflicts: Conflict[];
@@ -84,7 +86,7 @@ export function compareChanges(a: Change, b: Change): number {
 }
 
 export function plan(entities: Entity[], server: Map<string, OsmObject | undefined>): Plan {
-  const out: Plan = { changes: [], unchanged: [], conflicts: [], problems: [] };
+  const out: Plan = { zeroIds: new Map(), changes: [], unchanged: [], conflicts: [], problems: [] };
   const used = new Set<number>();
   for (const e of entities) {
     if (e.type !== 'changeset' && Number(e.id) < 0) {
@@ -118,6 +120,7 @@ export function plan(entities: Entity[], server: Map<string, OsmObject | undefin
     if (mine.id <= 0) {
       if (mine.id === 0) {
         mine.id = freeId();
+        out.zeroIds.set(e.line, mine.id);
       }
       mine.version = 1;
       out.changes.push({ action: 'create', object: mine, entity: e });

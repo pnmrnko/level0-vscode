@@ -12,6 +12,8 @@ import { isIdentifierKey } from './valuelinks';
 import { downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
 import { checkConflictsCommand, showOscCommand } from './changes';
+import { Auth, loginCommand, logoutCommand } from './auth';
+import { uploadCommand } from './upload';
 
 function config() {
   return vscode.workspace.getConfiguration('level0l');
@@ -607,15 +609,21 @@ export function activate(context: vscode.ExtensionContext): void {
     return client;
   };
 
-  const osm = new OsmClient({ userAgent });
+  const auth = new Auth(context, userAgent, log);
+  const apiBase = () => config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/');
+  const osm = new OsmClient({ userAgent, token: () => auth.token(apiBase()) });
   const downloadOptions = () => ({
-    apiBase: config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/'),
+    apiBase: apiBase(),
     overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
     maxObjects: config().get<number>('maxObjects', 500),
     state: context.globalState,
   });
 
-  const changesOptions = () => ({ apiBase: downloadOptions().apiBase, generator: `level0-vscode ${version}` });
+  const changesOptions = () => ({
+    apiBase: apiBase(),
+    generator: `level0-vscode ${version}`,
+    clientId: config().get<string>('oauth.clientId', ''),
+  });
 
   const selector: vscode.DocumentSelector = { language: 'level0l' };
   const diagnostics = new Level0Diagnostics(taginfo, log);
@@ -630,6 +638,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('level0l.runOverpass', () => overpassCommand(osm, downloadOptions(), log)),
     vscode.commands.registerCommand('level0l.checkConflicts', () => checkConflictsCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.login', () => loginCommand(auth, apiBase(), changesOptions().clientId)),
+    vscode.commands.registerCommand('level0l.logout', () => logoutCommand(auth, apiBase())),
+    vscode.commands.registerCommand('level0l.upload', () => uploadCommand(osm, auth, changesOptions(), log)),
+    vscode.window.registerUriHandler(auth),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),

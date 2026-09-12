@@ -14,7 +14,7 @@ export interface ChangesOptions {
   generator: string;
 }
 
-function activeLevel0Editor(): vscode.TextEditor | undefined {
+export function activeLevel0Editor(): vscode.TextEditor | undefined {
   const editor = vscode.window.activeTextEditor;
   if (editor?.document.languageId !== 'level0l') {
     vscode.window.showInformationMessage('Open a Level0L document first');
@@ -23,7 +23,7 @@ function activeLevel0Editor(): vscode.TextEditor | undefined {
   return editor;
 }
 
-async function computePlan(editor: vscode.TextEditor, client: OsmClient, opts: ChangesOptions, log: vscode.OutputChannel): Promise<Plan | undefined> {
+export async function computePlan(editor: vscode.TextEditor, client: OsmClient, opts: ChangesOptions, log: vscode.OutputChannel): Promise<Plan | undefined> {
   const { entities } = parse(editor.document.getText());
   try {
     const state = await vscode.window.withProgress(
@@ -41,7 +41,7 @@ async function computePlan(editor: vscode.TextEditor, client: OsmClient, opts: C
 
 // Conflicts are written into the document as Level0 writes them; the ones
 // without a server object (deleted there) are only reported.
-async function writeConflicts(editor: vscode.TextEditor, p: Plan): Promise<void> {
+export async function writeConflicts(editor: vscode.TextEditor, p: Plan): Promise<void> {
   const replacements = conflictReplacements(p.conflicts);
   if (replacements.length === 0) {
     return;
@@ -74,7 +74,7 @@ export function summary(p: Plan): string {
   return parts.join(', ');
 }
 
-function report(p: Plan, log: vscode.OutputChannel): void {
+export function report(p: Plan, log: vscode.OutputChannel): void {
   const text = summary(p);
   log.appendLine(text);
   if (p.conflicts.length || p.problems.length) {

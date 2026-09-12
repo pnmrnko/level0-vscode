@@ -110,6 +110,11 @@
           "default": "https://api.openstreetmap.org/api/0.6/",
           "description": "Base URL of the OSM API 0.6 used for downloading and uploading. Use https://api06.dev.openstreetmap.org/api/0.6/ for the development server."
         },
+        "level0l.oauth.clientId": {
+          "type": "string",
+          "default": "",
+          "description": "OAuth 2 client id of a public application registered on the OSM site in use. Empty means the built-in id for openstreetmap.org or the development server."
+        },
         "level0l.overpassUrl": {
           "type": "string",
           "default": "https://overpass-api.de/api/interpreter",
@@ -155,6 +160,21 @@
         "command": "level0l.showOsc",
         "title": "Show osmChange",
         "category": "Level0L"
+      },
+      {
+        "command": "level0l.upload",
+        "title": "Upload changeset",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.login",
+        "title": "Log in to OSM",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.logout",
+        "title": "Log out of OSM",
+        "category": "Level0L"
       }
     ],
     "menus": {
@@ -169,6 +189,10 @@
         },
         {
           "command": "level0l.showOsc",
+          "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.upload",
           "when": "editorLangId == level0l"
         }
       ]
