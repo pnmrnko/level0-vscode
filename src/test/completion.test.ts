@@ -39,6 +39,8 @@ test('role after a member id in a relation, with the relation type', () => {
 test('header keywords at column 0, after prefixes too', () => {
   assert.deepEqual(at('no', 0, 2), { kind: 'header', partial: 'no', start: 0 });
   assert.deepEqual(at('-no', 0, 3), { kind: 'header', partial: 'no', start: 1 });
+  assert.equal(at('-way 987654322.1', 0, 1), undefined);
+  assert.equal(at('!node 1: 50, 30', 0, 1), undefined);
   assert.deepEqual(at('node 1: 50, 30\n  amenity = cafe\n', 2, 0), { kind: 'header', partial: '', start: 0 });
 });
 

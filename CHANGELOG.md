@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Typing `-` or `!` in front of an existing header no longer pops up the list of entity types.
 - Code actions to download objects the document refers to but does not contain: the member under the cursor, with its nodes or members for ways and relations, or every missing member of the object or selection.
 
 ## 0.3.0

@@ -67,8 +67,9 @@ export function completionContext(lines: string[], line: number, character: numb
   }
 
   m = /^([!-]*)(\w*)$/.exec(before);
-  if (m && (before.length === m[2].length + m[1].length)) {
-    // Column 0, no indentation: a header keyword.
+  if (m && before.length === m[2].length + m[1].length && lines[line].slice(character).trim() === '') {
+    // Column 0, no indentation: a header keyword. Not when the line already
+    // goes on after the cursor, as when "-" or "!" is put before a header.
     return { kind: 'header', partial: m[2], start: m[1].length };
   }
 
