@@ -80,6 +80,11 @@
           "description": "Language code for wiki descriptions in hovers (e.g. \"uk\"). Empty means the VS Code display language."
         }
       }
+    },
+    "configurationDefaults": {
+      "[level0l]": {
+        "editor.wordWrap": "on"
+      }
     }
   },
   "scripts": {

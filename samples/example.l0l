@@ -1,7 +1,4 @@
-# Level0L walkthrough. Every construct of the language is shown below, together
-# with what the extension does for it: highlighting, Cmd/Ctrl+click links and
-# taginfo hovers. The file is valid and could be uploaded by Level0 as is,
-# except for the conflict block near the end.
+# Level0L walkthrough. Every construct of the language is shown below, together with what the extension does for it: highlighting, Cmd/Ctrl+click links and taginfo hovers. The file is valid and could be uploaded by Level0 as is, except for the conflict block near the end.
 #
 # Grammar, as implemented by level0l.php in the Level0 repository:
 #
@@ -9,15 +6,11 @@
 #     key = value                                          tag
 #     nd|wy|rel id [role]                                  way node / relation member
 #
-# A comment is a line whose first character is "#". An indented "#" is not a
-# comment and the reference parser rejects it, so the extension marks it invalid.
-# A trailing "# ..." is allowed on entity headers only; inside a tag line "#"
-# is part of the value.
+# A comment is a line whose first character is "#". An indented "#" is not a comment and the reference parser rejects it, so the extension marks it invalid. A trailing "# ..." is allowed on entity headers only; inside a tag line "#" is part of the value.
 
 
 # ---------------------------------------------------------------------------
-# Changeset metadata: at most one block, tags become changeset tags. Keys here
-# are not OSM object tags, so there are no wiki links or hovers in this block.
+# Changeset metadata: at most one block, tags become changeset tags. Keys here are not OSM object tags, so there are no wiki links or hovers in this block.
 
 changeset
   comment = Survey of Khreshchatyk: fix cafe tags, add a tree and a footway
@@ -26,13 +19,9 @@ changeset
 
 
 # ---------------------------------------------------------------------------
-# Existing node: "id.version" and coordinates. The id links to osm.org, the
-# coordinates link to the map at zoom 18. The version is what Level0 sends to
-# the API; keep it so the server can detect conflicts.
+# Existing node: "id.version" and coordinates. The id links to osm.org, the coordinates link to the map at zoom 18. The version is what Level0 sends to the API; keep it so the server can detect conflicts.
 #
-# Hover "amenity" for the key: status "de facto", description in your language,
-# counts by object type, top values. Hover "cafe" for the tag: status "approved",
-# description, "Applies to", commonly combined tags.
+# Hover "amenity" for the key: status "de facto", description in your language, counts by object type, top values. Hover "cafe" for the tag: status "approved", description, "Applies to", commonly combined tags.
 
 node 4294967296.3: 50.4501, 30.5234
   amenity = cafe
@@ -44,35 +33,26 @@ node 4294967296.3: 50.4501, 30.5234
   note = Verified on site, see issue #12
 
 # Notes on the tags above:
-# - "name", "addr:street", "opening_hours" have free-text values, so only the
-#   key is linked and hovered; the value is not looked up as a tag.
-# - The first "=" separates key from value; further "=" belong to the value,
-#   as in the website tag. No escaping is needed in values.
+# - "name", "addr:street", "opening_hours" have free-text values, so only the key is linked and hovered; the value is not looked up as a tag.
+# - The first "=" separates key from value; further "=" belong to the value, as in the website tag. No escaping is needed in values.
 # - "#" inside a tag line is part of the value, not a comment (note tag).
-# - A key can itself contain "=" (rare, usually a mistake in the data). Level0
-#   writes such a key with the "=" escaped as "\=" so it is not split, and
-#   unescapes it when reading. Not shown live here; do not use it on purpose.
+# - A key can itself contain "=" (rare, usually a mistake in the data). Level0 writes such a key with the "=" escaped as "\=" so it is not split, and unescapes it when reading. Not shown live here; do not use it on purpose.
 
 
-# Node without a version: valid, but the upload will fail if the object changed
-# on the server since Level0 cannot send a version. A header may carry a
-# trailing comment.
+# Node without a version: valid, but the upload will fail if the object changed on the server since Level0 cannot send a version. A header may carry a trailing comment.
 
 node 240109189: 50.4508, 30.5227  # entrance to the courtyard
   entrance = yes
   access = private
 
 
-# Untagged node: just a header. Level0 prints these last and without blank
-# lines between them.
+# Untagged node: just a header. Level0 prints these last and without blank lines between them.
 node 1500000001.1: 50.45012, 30.52341
 node 1500000002.1: 50.45015, 30.52360
 
 
 # ---------------------------------------------------------------------------
-# New objects have a negative id, or no id at all (which Level0 treats as id 0).
-# Negative ids get their own highlighting scope and no osm.org link. A node
-# must have coordinates unless it is being deleted.
+# New objects have a negative id, or no id at all (which Level0 treats as id 0). Negative ids get their own highlighting scope and no osm.org link. A node must have coordinates unless it is being deleted.
 
 node -1: 50.4502, 30.5240
   natural = tree
@@ -83,9 +63,7 @@ node: 50.4503, 30.5241
 
 
 # ---------------------------------------------------------------------------
-# Way: "nd" lines list its nodes in order. A closed way repeats the first node
-# last. Ways must have at least two nodes. Member ids link to osm.org; new
-# (negative) nodes do not.
+# Way: "nd" lines list its nodes in order. A closed way repeats the first node last. Ways must have at least two nodes. Member ids link to osm.org; new (negative) nodes do not.
 
 way 123456789.7
   highway = footway
@@ -113,9 +91,7 @@ way 987654322.4
 
 
 # ---------------------------------------------------------------------------
-# Relation: members are "nd", "wy" or "rel" followed by an id and an optional
-# role. Relations must have at least one member. A role can be omitted; a role
-# with spaces is taken verbatim to the end of the line.
+# Relation: members are "nd", "wy" or "rel" followed by an id and an optional role. Relations must have at least one member. A role can be omitted; a role with spaces is taken verbatim to the end of the line.
 
 relation 8675309.4
   type = multipolygon
@@ -135,9 +111,7 @@ relation -3
 
 
 # ---------------------------------------------------------------------------
-# Deletion: "-" before the type. Only for existing objects; deleting a negative
-# or missing id is an error. Keep the version, the API requires it. Tags and
-# members under a deleted object are ignored.
+# Deletion: "-" before the type. Only for existing objects; deleting a negative or missing id is an error. Keep the version, the API requires it. Tags and members under a deleted object are ignored.
 
 -node 1500000003.2: 50.4509, 30.5230
   amenity = bench
@@ -155,8 +129,7 @@ node -4: 50.4504, 30.5242
   amenity = bench
   backrest = yes
 
-# Deprecated and obsolete tags: the status badge is shown in uppercase and the
-# description says what to use instead.
+# Deprecated and obsolete tags: the status badge is shown in uppercase and the description says what to use instead.
 node -5: 50.4505, 30.5243
   amenity = nursery
 
@@ -165,14 +138,11 @@ way -6
   nd 1500000001
   nd 1500000002
 
-# A key taginfo has never seen is reported as a possible typo in the hover.
-# It is a valid tag for the parser, only the hover warns about it.
+# A key taginfo has never seen is reported as a possible typo in the hover. It is a valid tag for the parser, only the hover warns about it.
 node -7: 50.4506, 30.5244
   amenityy = cafe
 
-# "Applies to" in the hover comes from the wiki. amenity=bench is documented
-# for nodes and areas; hovering it on a route relation makes the mismatch
-# visible even though the parser accepts it.
+# "Applies to" in the hover comes from the wiki. amenity=bench is documented for nodes and areas; hovering it on a route relation makes the mismatch visible even though the parser accepts it.
 relation -8
   type = route
   amenity = bench
@@ -180,10 +150,7 @@ relation -8
 
 
 # ---------------------------------------------------------------------------
-# Conflict marker (blocks upload). Level0 itself writes this when the object
-# was changed on the server between download and upload: your edits are
-# preserved in a comment, the current server version follows with "!" before
-# the type. Upload is refused until you merge the edits and remove the "!".
+# Conflict marker (blocks upload). Level0 itself writes this when the object was changed on the server between download and upload: your edits are preserved in a comment, the current server version follows with "!" before the type. Upload is refused until you merge the edits and remove the "!".
 
 # Conflict! Your edits to the old version are saved in this comment.
 # Please make appropriate changes and remove '!' character from the entity header.
@@ -197,16 +164,13 @@ relation -8
 
 
 # ---------------------------------------------------------------------------
-# Lines the parser rejects. Remove the leading "#" from one of the first three
-# to see it highlighted as invalid; the extension marks them from syntax alone.
+# Lines the parser rejects. Remove the leading "#" from one of the first three to see it highlighted as invalid; the extension marks them from syntax alone.
 
 #   # indented comment: not a comment, rejected as unknown content
 # this line is not a tag, member or header
 # node 50.1, 30.1       coordinates without the ":" separator
 
-# Errors the parser reports from context, not from a single line. They are
-# highlighted as normal members today; flagging them is the job of a future
-# diagnostics feature.
+# Errors the parser reports from context, not from a single line. They are highlighted as normal members today; flagging them is the job of a future diagnostics feature.
 #
 #   nd 123 outer        under a way: a role on a way node is a warning
 #   wy 123              under a way: ways can only have nd members
