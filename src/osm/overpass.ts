@@ -37,7 +37,7 @@ export function prepareQuery(query: string, bbox?: Bbox): { query: string } | { 
   }
   if (shortcuts.has('bbox')) {
     if (!bbox) {
-      return { error: 'No bounding box for {{bbox}}: the document has no nodes with coordinates' };
+      return { error: 'No bounding box for {{bbox}}: open a Level0L document with nodes next to the query, or write the coordinates' };
     }
     return { query: q.replace(/\{\{\s*bbox\s*\}\}/g, formatBbox(bbox)) };
   }

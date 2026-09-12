@@ -23,9 +23,15 @@ interface Fetched {
   truncated: boolean;
 }
 
-function activeLevel0Editor(): vscode.TextEditor | undefined {
-  const editor = vscode.window.activeTextEditor;
-  return editor?.document.languageId === 'level0l' ? editor : undefined;
+// The Level0L document objects go to and {{bbox}} comes from: the active
+// editor, or else a visible one, since the query is often run from an
+// .overpassql file opened next to it.
+function targetEditor(): vscode.TextEditor | undefined {
+  const active = vscode.window.activeTextEditor;
+  if (active?.document.languageId === 'level0l') {
+    return active;
+  }
+  return vscode.window.visibleTextEditors.find((e) => e.document.languageId === 'level0l');
 }
 
 // Extent of the nodes in the document, padded like a map download.
@@ -93,7 +99,7 @@ async function fetchOverpass(client: OsmClient, query: string, opts: DownloadOpt
 // Appends the objects to the active document or opens a new one. Objects the
 // document already has are left alone, whether edited or not.
 async function addObjects(fetched: Fetched, opts: DownloadOptions, log: vscode.OutputChannel, extraNotes: string[] = []): Promise<void> {
-  const editor = activeLevel0Editor();
+  const editor = targetEditor();
   const present = new Set<string>();
   if (editor) {
     for (const e of parse(editor.document.getText()).entities) {
@@ -149,7 +155,7 @@ function showError(what: string, err: unknown, log: vscode.OutputChannel): void 
 }
 
 async function runQuery(client: OsmClient, raw: string, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
-  const editor = activeLevel0Editor();
+  const editor = targetEditor();
   const bbox = editor ? documentBbox(parse(editor.document.getText()).entities) : undefined;
   const prepared = prepareQuery(raw, bbox);
   if ('error' in prepared) {
@@ -208,7 +214,7 @@ export async function overpassCommand(client: OsmClient, opts: DownloadOptions, 
       (await vscode.window.showInputBox({
         title: 'Run Overpass query',
         placeHolder: 'nwr[amenity=cafe]({{bbox}}); out meta;',
-        prompt: 'Or select a query in an editor first. {{bbox}} is the extent of the active Level0L document.',
+        prompt: 'Or select a query in an editor first. {{bbox}} is the extent of the visible Level0L document.',
       })) ?? '';
   }
   if (!query.trim()) {
