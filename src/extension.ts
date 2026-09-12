@@ -5,6 +5,7 @@ import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
+import { isIdentifierKey } from './valuelinks';
 
 function config() {
   return vscode.workspace.getConfiguration('level0l');
@@ -140,7 +141,7 @@ class Level0HoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const asTag = onValue && isEnumValue(tag.value);
+    const asTag = onValue && isEnumValue(tag.value) && !isIdentifierKey(tag.key);
     const range = asTag
       ? new vscode.Range(position.line, tag.valueStart, position.line, tag.valueEnd)
       : new vscode.Range(position.line, tag.keyStart, position.line, tag.keyEnd);

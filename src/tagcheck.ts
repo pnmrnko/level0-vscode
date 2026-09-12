@@ -14,9 +14,11 @@
 //   further request. Others cost one request; a value with zero uses is
 //   reported, a deprecated or obsolete tag gets the wiki's advice.
 //
-// Tags of deleted objects and of the changeset block are skipped.
+// Tags of deleted objects and of the changeset block are skipped, and so are
+// values of identifier keys such as contact:* whose values are account names.
 
 import { isEnumValue } from './links';
+import { isIdentifierKey } from './valuelinks';
 import { Diagnostic, Entity } from './parser';
 import { KeyOverview, TaginfoClient, WikiPage } from './taginfo';
 
@@ -69,7 +71,7 @@ export async function checkTags(
     }
     for (const t of e.tags) {
       push(keys, t.key, { key: t.key, line: t.line, start: t.keyStart, end: t.keyEnd });
-      if (isEnumValue(t.value)) {
+      if (isEnumValue(t.value) && !isIdentifierKey(t.key)) {
         push(tags, `${t.key}=${t.value}`, { key: t.key, value: t.value, line: t.line, start: t.valueStart, end: t.valueEnd });
       }
     }

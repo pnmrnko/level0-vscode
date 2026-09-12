@@ -31,11 +31,21 @@ node 4294967296.3: 50.4501, 30.5234
   opening_hours = Mo-Fr 08:00-20:00; Sa 09:00-18:00
   website = https://example.com/?ref=osm&utm=1
   note = Verified on site, see issue #12
+  phone = +380 44 123-45-67; +380 50 111 22 33
+  email = info@example.com
+  contact:instagram = kyivcoffee
+  contact:telegram = https://t.me/kyivcoffee
+  wikidata = Q12345
+  brand:wikidata = Q54321
+  wikipedia = uk:Хрещатик
+  wikimedia_commons = Category:Khreshchatyk
+  mapillary = 290478013593080
 
 # Notes on the tags above:
 # - "name", "addr:street", "opening_hours" have free-text values, so only the key is linked and hovered; the value is not looked up as a tag.
 # - The first "=" separates key from value; further "=" belong to the value, as in the website tag. No escaping is needed in values.
 # - "#" inside a tag line is part of the value, not a comment (note tag).
+# - Values that point somewhere link there instead of the wiki: Wikidata items (also namespaced keys such as brand:wikidata or name:etymology:wikidata), Wikipedia articles in the "lang:Title" form, Commons files and categories, websites, Mapillary and Panoramax pictures, social network accounts under contact:* whether given as a URL or a bare user name. Phone numbers become tel: links and e-mail addresses mailto: links, which macOS hands to the phone or mail app. Values separated by ";" get one link each.
 # - A key can itself contain "=" (rare, usually a mistake in the data). Level0 writes such a key with the "=" escaped as "\=" so it is not split, and unescapes it when reading. Not shown live here; do not use it on purpose.
 
 

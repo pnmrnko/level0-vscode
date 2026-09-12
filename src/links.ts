@@ -2,6 +2,7 @@
 // it can be unit-tested and reused (e.g. in a language server) later.
 
 import { HEADER_RE, MEMBER_RE, isBlankOrComment, parseTagLine } from './lines';
+import { isIdentifierKey, valueLinks } from './valuelinks';
 
 export interface LinkOptions {
   osmBaseUrl: string;
@@ -116,7 +117,20 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
         wiki: { key: tag.key },
       });
 
-      if (isEnumValue(tag.value)) {
+      // Values that point somewhere (Wikidata, websites, phones...) link
+      // there; plain enumerated values link to their wiki page.
+      const targets = valueLinks(tag.key, tag.value);
+      for (const t of targets) {
+        links.push({
+          line: lineNo,
+          start: tag.valueStart + t.start,
+          end: tag.valueStart + t.end,
+          url: t.url,
+          tooltip: t.tooltip,
+        });
+      }
+
+      if (!isIdentifierKey(tag.key) && isEnumValue(tag.value)) {
         links.push({
           line: lineNo,
           start: tag.valueStart,
