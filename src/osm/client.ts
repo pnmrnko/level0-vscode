@@ -22,11 +22,12 @@ export class OsmClient {
     return this.call('PUT', url, body, true);
   }
 
+  // The upload itself may take as long as the API allows a request to run.
   post(url: string, body: string): Promise<string> {
-    return this.call('POST', url, body, true);
+    return this.call('POST', url, body, true, 300000);
   }
 
-  private async call(method: string, url: string, body?: string, auth = false): Promise<string> {
+  private async call(method: string, url: string, body?: string, auth = false, timeoutMs = this.opts.timeoutMs): Promise<string> {
     const headers: Record<string, string> = { 'User-Agent': this.opts.userAgent, Accept: 'application/xml, text/xml' };
     if (body !== undefined) {
       headers['Content-Type'] = 'application/xml';
@@ -38,7 +39,7 @@ export class OsmClient {
       }
       headers.Authorization = `Bearer ${token}`;
     }
-    const res = await request(url, { method, headers, body, timeoutMs: this.opts.timeoutMs });
+    const res = await request(url, { method, headers, body, timeoutMs });
     if (res.status < 200 || res.status >= 300) {
       // The API explains errors in the body or in this header, in plain text.
       const reason = (res.headers.error as string | undefined) ?? res.body.trim().split('\n')[0] ?? '';

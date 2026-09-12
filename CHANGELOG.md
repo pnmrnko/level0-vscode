@@ -6,6 +6,7 @@
 - New command "Level0L: Run Overpass query": runs the selection, an `.overpassql` file or a typed query and adds the result to the document; `{{bbox}}` is the extent of the document. Files `.overpassql` are recognized as Overpass QL. Setting `level0l.overpassUrl`.
 - New commands "Level0L: Check for conflicts with the server" and "Level0L: Show osmChange": the document is compared with the current server state, conflicts are written into it as Level0 does, and the osmChange an upload would send can be previewed and saved as `.osc`.
 - New commands "Level0L: Upload changeset", "Log in to OSM" and "Log out of OSM": OAuth 2 login with PKCE in the browser, token in the secret storage, upload as one changeset, and the server's diffResult applied to the document. Setting `level0l.oauth.clientId`.
+- The status bar shows the logged-in account and whether the development server is in use.
 - Overpass: a busy server and 429/406 answers get plain messages, queries run one at a time.
 - The tags and members of objects marked for deletion are dimmed instead of object versions.
 

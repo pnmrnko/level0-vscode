@@ -12,7 +12,7 @@ import { isIdentifierKey } from './valuelinks';
 import { downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
 import { checkConflictsCommand, showOscCommand } from './changes';
-import { Auth, loginCommand, logoutCommand } from './auth';
+import { AccountStatus, Auth, accountCommand, loginCommand, logoutCommand } from './auth';
 import { uploadCommand } from './upload';
 
 function config() {
@@ -612,6 +612,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const auth = new Auth(context, userAgent, log);
   const apiBase = () => config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/');
   const osm = new OsmClient({ userAgent, token: () => auth.token(apiBase()) });
+  const status = new AccountStatus(auth, apiBase);
   const downloadOptions = () => ({
     apiBase: apiBase(),
     overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
@@ -641,7 +642,11 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('level0l.login', () => loginCommand(auth, apiBase(), changesOptions().clientId)),
     vscode.commands.registerCommand('level0l.logout', () => logoutCommand(auth, apiBase())),
     vscode.commands.registerCommand('level0l.upload', () => uploadCommand(osm, auth, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.account', () => accountCommand(auth, apiBase(), changesOptions().clientId)),
     vscode.window.registerUriHandler(auth),
+    status,
+    auth.onDidChange(() => status.refresh()),
+    vscode.window.onDidChangeActiveTextEditor(() => status.refresh()),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
@@ -662,11 +667,13 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('level0l')) {
         vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
+        status.refresh();
       }
     })
   );
   vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
   vscode.window.visibleTextEditors.forEach(decorate);
+  status.refresh();
 }
 
 export function deactivate(): void {}

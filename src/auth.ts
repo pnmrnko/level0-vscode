@@ -15,6 +15,8 @@ export interface Account {
 
 export class Auth implements vscode.UriHandler {
   private pending?: { state: string; resolve: (uri: vscode.Uri) => void };
+  private changed = new vscode.EventEmitter<void>();
+  readonly onDidChange = this.changed.event;
 
   constructor(private context: vscode.ExtensionContext, private userAgent: string, private log: vscode.OutputChannel) {}
 
@@ -83,6 +85,7 @@ export class Auth implements vscode.UriHandler {
     await this.context.secrets.store(this.tokenKey(site), token.access_token);
     await this.context.globalState.update(this.nameKey(site), user.display_name);
     this.log.appendLine(`logged in to ${site} as ${user.display_name}`);
+    this.changed.fire();
     return { site, name: user.display_name };
   }
 
@@ -91,6 +94,7 @@ export class Auth implements vscode.UriHandler {
     await this.context.secrets.delete(this.tokenKey(site));
     await this.context.globalState.update(this.nameKey(site), undefined);
     this.log.appendLine(`logged out of ${site}`);
+    this.changed.fire();
   }
 }
 
@@ -118,4 +122,49 @@ export async function logoutCommand(auth: Auth, apiBase: string): Promise<void> 
   }
   await auth.logout(apiBase);
   vscode.window.showInformationMessage(`Logged out of ${current.site}`);
+}
+
+// Status bar entry for Level0L documents: who is logged in and to which
+// server, since the development server looks exactly like the real one.
+export class AccountStatus {
+  private item = vscode.window.createStatusBarItem('level0l.account', vscode.StatusBarAlignment.Right, 50);
+
+  constructor(private auth: Auth, private apiBase: () => string) {
+    this.item.name = 'Level0L account';
+    this.item.command = 'level0l.account';
+  }
+
+  async refresh(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (editor?.document.languageId !== 'level0l') {
+      this.item.hide();
+      return;
+    }
+    const base = this.apiBase();
+    const site = siteUrl(base);
+    const dev = site.includes('dev.openstreetmap.org') ? ' (dev)' : '';
+    const account = await this.auth.account(base);
+    this.item.text = account ? `$(account) ${account.name}${dev}` : `$(account) Log in to OSM${dev}`;
+    this.item.tooltip = account ? `Logged in to ${site} as ${account.name}` : `Not logged in to ${site}`;
+    this.item.show();
+  }
+
+  dispose(): void {
+    this.item.dispose();
+  }
+}
+
+export async function accountCommand(auth: Auth, apiBase: string, clientIdSetting: string): Promise<void> {
+  const current = await auth.account(apiBase);
+  if (!current) {
+    return loginCommand(auth, apiBase, clientIdSetting);
+  }
+  const pick = await vscode.window.showQuickPick([`Log out of ${current.site}`, `Open ${current.site}/user/${current.name}`], {
+    title: `Logged in to ${current.site} as ${current.name}`,
+  });
+  if (pick?.startsWith('Log out')) {
+    await logoutCommand(auth, apiBase);
+  } else if (pick) {
+    vscode.env.openExternal(vscode.Uri.parse(`${current.site}/user/${encodeURIComponent(current.name)}`));
+  }
 }

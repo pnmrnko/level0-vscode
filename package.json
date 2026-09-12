@@ -175,6 +175,11 @@
         "command": "level0l.logout",
         "title": "Log out of OSM",
         "category": "Level0L"
+      },
+      {
+        "command": "level0l.account",
+        "title": "OSM account",
+        "category": "Level0L"
       }
     ],
     "menus": {
@@ -194,6 +199,10 @@
         {
           "command": "level0l.upload",
           "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.account",
+          "when": "false"
         }
       ]
     }

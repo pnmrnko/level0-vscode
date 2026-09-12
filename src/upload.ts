@@ -11,6 +11,9 @@ import { siteUrl } from './osm/oauth';
 import { createChangesetXml, createOsc } from './osm/osc';
 import { parse } from './parser';
 
+// The API refuses changesets with more elements than this.
+const MAX_CHANGES = 10000;
+
 export interface UploadOptions {
   apiBase: string;
   generator: string;
@@ -47,6 +50,10 @@ export async function uploadCommand(client: OsmClient, auth: Auth, opts: UploadO
   await writeConflicts(editor, p);
   if (p.conflicts.length || p.problems.length || p.changes.length === 0) {
     report(p, log);
+    return;
+  }
+  if (p.changes.length > MAX_CHANGES) {
+    vscode.window.showErrorMessage(`${p.changes.length} changes, but a changeset can hold ${MAX_CHANGES}; split the document`);
     return;
   }
 
