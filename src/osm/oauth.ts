@@ -21,7 +21,7 @@ export function siteUrl(apiBase: string): string {
 // Client ids of the registered public applications, by site.
 export const CLIENT_IDS: Record<string, string> = {
   'https://www.openstreetmap.org': '',
-  'https://master.apis.dev.openstreetmap.org': '',
+  'https://master.apis.dev.openstreetmap.org': 'FcXdQB_EhnM5POHtCMm9uXx1lO-y7g7Ay2O-Zjjft7w',
 };
 
 function base64url(buf: Buffer): string {
