@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { formatBbox, hasMeta, isOverpassQuery, overpassError, prepareQuery } from '../osm/overpass';
+import { formatBbox, hasMeta, isOverpassQuery, overpassError, parseBbox, prepareQuery } from '../osm/overpass';
 
 const BOX = { south: 50.44, west: 30.51, north: 50.46, east: 30.54 };
 
@@ -37,4 +37,12 @@ test('out meta detection', () => {
   assert.equal(hasMeta('node(1); out meta;'), true);
   assert.equal(hasMeta('node(1); out meta qt;'), true);
   assert.equal(hasMeta('node(1); out body; out skel qt;'), false);
+});
+
+test('typed bounding boxes', () => {
+  assert.deepEqual(parseBbox('50.44, 30.51, 50.46,30.54', 0.001), BOX);
+  assert.equal(formatBbox(parseBbox('50.45, 30.52', 0.001)!), '50.449,30.519,50.451,30.521');
+  assert.equal(parseBbox('50.46,30.51,50.44,30.54', 0.001), undefined);
+  assert.equal(parseBbox('abc', 0.001), undefined);
+  assert.equal(parseBbox('1,2,3', 0.001), undefined);
 });

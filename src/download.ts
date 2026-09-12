@@ -6,7 +6,7 @@ import { OsmClient } from './osm/client';
 import { formatObjects } from './osm/format';
 import { resolveInput, BBOX_RADIUS } from './osm/input';
 import { OsmObject, key } from './osm/model';
-import { Bbox, hasMeta, isOverpassQuery, overpassError, prepareQuery } from './osm/overpass';
+import { Bbox, formatBbox, hasBboxPlaceholder, hasMeta, isOverpassQuery, overpassError, parseBbox, prepareQuery } from './osm/overpass';
 import { readOsmXml } from './osm/xml';
 import { Entity, parse } from './parser';
 
@@ -14,7 +14,11 @@ export interface DownloadOptions {
   apiBase: string;
   overpassUrl: string;
   maxObjects: number;
+  // Remembers the last bounding box typed for {{bbox}}.
+  state: vscode.Memento;
 }
+
+const LAST_BBOX = 'level0l.lastBbox';
 
 const PLACEHOLDER = 'osm.org or API URL, map URL, objects: n123, w45!, r7, or an Overpass query';
 
@@ -154,9 +158,36 @@ function showError(what: string, err: unknown, log: vscode.OutputChannel): void 
   vscode.window.showErrorMessage(`${what} failed: ${message}`);
 }
 
-async function runQuery(client: OsmClient, raw: string, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
+// {{bbox}} is the extent of the Level0L document next to the query; without
+// one, the user is asked for a box.
+async function bboxFor(query: string, opts: DownloadOptions): Promise<Bbox | undefined> {
+  if (!hasBboxPlaceholder(query)) {
+    return undefined;
+  }
   const editor = targetEditor();
-  const bbox = editor ? documentBbox(parse(editor.document.getText()).entities) : undefined;
+  const fromDocument = editor && documentBbox(parse(editor.document.getText()).entities);
+  if (fromDocument) {
+    return fromDocument;
+  }
+  const typed = await vscode.window.showInputBox({
+    title: 'Bounding box for {{bbox}}',
+    value: opts.state.get<string>(LAST_BBOX, ''),
+    placeHolder: 'south,west,north,east or lat, lon',
+    prompt: 'No Level0L document with nodes is open to take the extent from.',
+    validateInput: (s) => (s.trim() && !parseBbox(s, BBOX_RADIUS) ? 'Expected south,west,north,east or lat, lon' : undefined),
+  });
+  const box = typed ? parseBbox(typed, BBOX_RADIUS) : undefined;
+  if (box) {
+    await opts.state.update(LAST_BBOX, formatBbox(box));
+  }
+  return box;
+}
+
+async function runQuery(client: OsmClient, raw: string, opts: DownloadOptions, log: vscode.OutputChannel): Promise<void> {
+  const bbox = await bboxFor(raw, opts);
+  if (hasBboxPlaceholder(raw) && !bbox) {
+    return;
+  }
   const prepared = prepareQuery(raw, bbox);
   if ('error' in prepared) {
     vscode.window.showErrorMessage(prepared.error);

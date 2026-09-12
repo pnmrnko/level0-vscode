@@ -614,6 +614,7 @@ export function activate(context: vscode.ExtensionContext): void {
     apiBase: config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/'),
     overpassUrl: config().get<string>('overpassUrl', 'https://overpass-api.de/api/interpreter'),
     maxObjects: config().get<number>('maxObjects', 500),
+    state: context.globalState,
   });
 
   const selector: vscode.DocumentSelector = { language: 'level0l' };

@@ -16,6 +16,26 @@ export function isOverpassQuery(s: string): boolean {
   return !/^https?:\/\//i.test(s.trim()) && /\bout\b[^;]*;/.test(s);
 }
 
+// "south,west,north,east" as typed by the user, or "lat, lon" for a small
+// box around a point.
+export function parseBbox(s: string, radius: number): Bbox | undefined {
+  const n = s.trim().split(/\s*,\s*/).map(Number);
+  if (n.some((x) => isNaN(x))) {
+    return undefined;
+  }
+  if (n.length === 4 && n[0] < n[2] && n[1] < n[3]) {
+    return { south: n[0], west: n[1], north: n[2], east: n[3] };
+  }
+  if (n.length === 2 && Math.abs(n[0]) <= 90 && Math.abs(n[1]) <= 180) {
+    return { south: n[0] - radius, west: n[1] - radius, north: n[0] + radius, east: n[1] + radius };
+  }
+  return undefined;
+}
+
+export function hasBboxPlaceholder(query: string): boolean {
+  return /\{\{\s*bbox\s*\}\}/.test(query);
+}
+
 export function formatBbox(b: Bbox): string {
   return [b.south, b.west, b.north, b.east].map((n) => n.toFixed(7).replace(/\.?0+$/, '')).join(',');
 }
@@ -37,7 +57,7 @@ export function prepareQuery(query: string, bbox?: Bbox): { query: string } | { 
   }
   if (shortcuts.has('bbox')) {
     if (!bbox) {
-      return { error: 'No bounding box for {{bbox}}: open a Level0L document with nodes next to the query, or write the coordinates' };
+      return { error: 'No bounding box for {{bbox}}' };
     }
     return { query: q.replace(/\{\{\s*bbox\s*\}\}/g, formatBbox(bbox)) };
   }
