@@ -95,6 +95,17 @@
           "type": "boolean",
           "default": true,
           "description": "Warn about keys and values that are unused in OSM or marked deprecated on the wiki, using taginfo."
+        },
+        "level0l.osmApiUrl": {
+          "type": "string",
+          "default": "https://api.openstreetmap.org/api/0.6/",
+          "description": "Base URL of the OSM API 0.6 used for downloading and uploading. Use https://api06.dev.openstreetmap.org/api/0.6/ for the development server."
+        },
+        "level0l.maxObjects": {
+          "type": "integer",
+          "default": 500,
+          "minimum": 1,
+          "description": "Maximum number of objects a single download adds to the document."
         }
       }
     },
@@ -109,6 +120,11 @@
       {
         "command": "level0l.stripMemberComments",
         "title": "Strip member comments (JOSM comfort0)",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.download",
+        "title": "Download from OSM",
         "category": "Level0L"
       }
     ],

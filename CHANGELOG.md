@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New command "Level0L: Download from OSM": objects, changesets, map areas and Overpass results are fetched from the API and appended to the document as Level0L text, with the same input forms Level0 accepts. Settings `level0l.osmApiUrl` and `level0l.maxObjects`.
+
 ## 0.1.1
 
 - Text copied from JOSM with the comfort0 plugin is read correctly: the `#comment` after a member line is no longer taken as a role. Relation members with such a comment get an information marker, since Level0 itself would read the comment as part of the role.

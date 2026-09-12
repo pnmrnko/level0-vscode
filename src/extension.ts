@@ -9,6 +9,8 @@ import { completionContext, MemberType } from './completion';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
+import { downloadCommand } from './download';
+import { OsmClient } from './osm/client';
 
 function config() {
   return vscode.workspace.getConfiguration('level0l');
@@ -592,6 +594,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Level0L');
   const version = context.extension.packageJSON.version as string;
   const repo = context.extension.packageJSON.repository?.url as string | undefined;
+  const userAgent = `level0-vscode/${version}${repo ? ` (${repo})` : ''}`;
 
   // The client is recreated when the taginfo URL changes so the cache follows
   // the instance it was filled from.
@@ -601,13 +604,16 @@ export function activate(context: vscode.ExtensionContext): void {
     const url = config().get<string>('taginfo.url', 'https://taginfo.openstreetmap.org');
     if (!client || url !== clientUrl) {
       clientUrl = url;
-      client = new TaginfoClient({
-        baseUrl: url,
-        userAgent: `level0-vscode/${version}${repo ? ` (${repo})` : ''}`,
-      });
+      client = new TaginfoClient({ baseUrl: url, userAgent });
     }
     return client;
   };
+
+  const osm = new OsmClient({ userAgent });
+  const downloadOptions = () => ({
+    apiBase: config().get<string>('osmApiUrl', 'https://api.openstreetmap.org/api/0.6/').replace(/\/?$/, '/'),
+    maxObjects: config().get<number>('maxObjects', 500),
+  });
 
   const selector: vscode.DocumentSelector = { language: 'level0l' };
   const diagnostics = new Level0Diagnostics(taginfo, log);
@@ -618,6 +624,7 @@ export function activate(context: vscode.ExtensionContext): void {
     diagnostics,
     vscode.commands.registerCommand(OPEN_EXTERNAL, (url: string) => vscode.env.openExternal(vscode.Uri.parse(url))),
     vscode.commands.registerTextEditorCommand('level0l.stripMemberComments', stripMemberComments),
+    vscode.commands.registerCommand('level0l.download', () => downloadCommand(osm, downloadOptions(), log)),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
