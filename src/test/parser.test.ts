@@ -109,6 +109,17 @@ test('relation members carry type and role', () => {
   );
 });
 
+test('JOSM comfort0 dialect: trailing comments on members are not roles', () => {
+  const text = 'way 1 #Назва (2 точки)\n  nd 2 #2\n  nd 3 #Ім\'я ноди\nrelation 4 #r\n  wy 1 outer #Назва\n  nd 2 #2\n';
+  const { entities, diagnostics } = parse(text);
+  assert.deepEqual(entities[0].members.map((m) => m.role), ['', '']);
+  assert.deepEqual(entities[1].members.map((m) => m.role), ['outer', '']);
+  assert.deepEqual(diagnostics.map((d) => [d.severity, d.line + 1]), [
+    ['information', 5],
+    ['information', 6],
+  ]);
+});
+
 test('the sample file parses with only the intended conflict error', () => {
   const text = require('fs').readFileSync(`${__dirname}/../../samples/example.l0l`, 'utf8');
   const { diagnostics } = parse(text);

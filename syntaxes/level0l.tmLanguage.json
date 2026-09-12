@@ -40,8 +40,8 @@
       }
     },
     "member": {
-      "comment": "nd|wy|rel id [role]",
-      "match": "^\\s*(nd|wy|rel)\\s+(-[0-9]+|[0-9]+)(?:\\s+(.+?))?\\s*$",
+      "comment": "nd|wy|rel id [role] [# comment]; the trailing comment is the JOSM comfort0 dialect",
+      "match": "^\\s*(nd|wy|rel)\\s+(-[0-9]+|[0-9]+)(?:\\s+([^#\\s].*?))?(?:\\s+(#.*))?\\s*$",
       "captures": {
         "1": { "name": "storage.type.member.level0l" },
         "2": {
@@ -50,7 +50,8 @@
             { "match": "[0-9]+", "name": "constant.numeric.id.level0l" }
           ]
         },
-        "3": { "name": "string.unquoted.role.level0l" }
+        "3": { "name": "string.unquoted.role.level0l" },
+        "4": { "name": "comment.line.number-sign.level0l" }
       }
     },
     "tag": {

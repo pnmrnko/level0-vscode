@@ -3,7 +3,10 @@
 
 export const HEADER_RE =
   /^(!)?(-)?(node|way|relation|changeset)(?:\s+(-?[0-9]+)(?:\.([0-9]+))?)?(?:\s*:\s*(-?[0-9]{1,2}(?:\.[0-9]+)?)\s*,\s*(-?[0-9]{1,3}(?:\.[0-9]+)?))?\s*(?:#.*)?$/;
-export const MEMBER_RE = /^\s*(nd|wy|rel)\s+(-?[0-9]+)(?:\s+(.+?))?\s*$/;
+// The reference parser takes everything after the id as the role. The JOSM
+// comfort0 plugin writes " #<name>" after each member instead; that trailing
+// comment is split off here so both dialects read correctly.
+export const MEMBER_RE = /^\s*(nd|wy|rel)\s+(-?[0-9]+)(?:\s+([^#\s].*?))?(?:\s+(#.*))?\s*$/;
 export const TAG_RE = /^\s*((?:[^=\\]|\\.)*?)\s*=\s*(.*?)\s*$/;
 
 export type EntityType = 'node' | 'way' | 'relation' | 'changeset';

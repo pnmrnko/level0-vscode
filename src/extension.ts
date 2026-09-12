@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
-import { conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './lines';
+import { MEMBER_RE, conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { Index } from './refs';
@@ -483,7 +483,24 @@ class Level0Structure implements vscode.DocumentSymbolProvider, vscode.FoldingRa
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
   warning: vscode.DiagnosticSeverity.Warning,
+  information: vscode.DiagnosticSeverity.Information,
 };
+
+// Removes the " #comment" JOSM comfort0 appends to member lines, which Level0
+// would take as the role. Header comments are kept, Level0 accepts them.
+async function stripMemberComments(editor: vscode.TextEditor): Promise<void> {
+  const edit = new vscode.WorkspaceEdit();
+  for (let i = 0; i < editor.document.lineCount; i++) {
+    const line = editor.document.lineAt(i);
+    const m = MEMBER_RE.exec(line.text);
+    if (m && m[4]) {
+      const start = line.text.lastIndexOf(m[4]);
+      const cut = line.text.slice(0, start).replace(/\s+$/, '').length;
+      edit.delete(editor.document.uri, new vscode.Range(i, cut, i, line.text.length));
+    }
+  }
+  await vscode.workspace.applyEdit(edit);
+}
 
 function toVscode(d: Diagnostic, source: string): vscode.Diagnostic {
   const out = new vscode.Diagnostic(new vscode.Range(d.line, d.start, d.line, d.end), d.message, SEVERITY[d.severity]);
@@ -600,6 +617,7 @@ export function activate(context: vscode.ExtensionContext): void {
     log,
     diagnostics,
     vscode.commands.registerCommand(OPEN_EXTERNAL, (url: string) => vscode.env.openExternal(vscode.Uri.parse(url))),
+    vscode.commands.registerTextEditorCommand('level0l.stripMemberComments', stripMemberComments),
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),

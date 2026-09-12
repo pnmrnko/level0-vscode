@@ -104,6 +104,21 @@
         "editor.guides.indentation": false,
         "editor.wordBasedSuggestions": "off"
       }
+    },
+    "commands": [
+      {
+        "command": "level0l.stripMemberComments",
+        "title": "Strip member comments (JOSM comfort0)",
+        "category": "Level0L"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "level0l.stripMemberComments",
+          "when": "editorLangId == level0l"
+        }
+      ]
     }
   },
   "scripts": {

@@ -102,6 +102,13 @@ way 987654322.1
 
 
 # ---------------------------------------------------------------------------
+# Text copied from JOSM with the comfort0 plugin has a comment after every member, "nd 123 #name of the node", and after headers. The extension reads those as comments. Level0 itself does not: on a relation member it would take the comment as part of the role, so such lines get an information marker, and the command "Level0L: Strip member comments" removes them before pasting into Level0.
+way -9 #new footway (2 nodes)
+  highway = footway
+  nd 1500000001 #1500000001
+  nd 1500000002 #1500000002
+
+
 # Relation: members are "nd", "wy" or "rel" followed by an id and an optional role. Relations must have at least one member. A role can be omitted; a role with spaces is taken verbatim to the end of the line. Completion helps here: type "wy " to pick a way from this file, then a space to pick a role used with this relation type.
 
 relation 8675309.4

@@ -6,7 +6,7 @@
 
 import { HEADER_RE, MEMBER_RE, EntityType, TagLine, isBlankOrComment, parseTagLine } from './lines';
 
-export type Severity = 'error' | 'warning';
+export type Severity = 'error' | 'warning' | 'information';
 
 export interface Diagnostic {
   line: number;
@@ -139,10 +139,16 @@ export function parse(text: string): ParseResult {
 
     const m = MEMBER_RE.exec(line);
     if (m) {
-      const [, kind, id, role] = m;
+      const [, kind, id, role, comment] = m;
       const kindStart = line.indexOf(kind);
       const idStart = line.indexOf(id, kindStart + kind.length);
       const member = { line: ln, id, role: role ?? '', start: idStart, end: idStart + id.length };
+      if (comment && cur.type === 'relation') {
+        // JOSM comfort0 writes these; Level0 itself would read the comment as
+        // part of the role.
+        const at = line.lastIndexOf(comment);
+        report(ln, 'information', 'Level0 reads this comment as part of the role; remove it before uploading with Level0', at, line.length);
+      }
       if (cur.type === 'node') {
         report(ln, 'error', 'A node cannot have member objects');
       } else if (cur.type === 'way') {
