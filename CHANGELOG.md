@@ -15,7 +15,7 @@ The editor now talks to OpenStreetMap. Nothing is stored outside the document: i
 - New commands "Level0L: Revert object to the server version" and "Level0L: Export as OSM XML".
 - The status bar shows the logged-in account and whether the development server is in use.
 - Overpass: a busy server and 429/406 answers get plain messages, queries run one at a time.
-- The tags and members of objects marked for deletion are dimmed instead of object versions.
+- Objects marked for deletion are dimmed instead of object versions.
 
 ## 0.1.1
 

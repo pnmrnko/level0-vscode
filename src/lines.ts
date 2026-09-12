@@ -93,16 +93,15 @@ function blockEnd(lines: string[], i: number): number {
   return end;
 }
 
-// Bodies of entities marked for deletion with "-", for dimming: Level0
-// ignores their tags and members, only the header counts.
+// Entities marked for deletion with "-", header to last member, for
+// dimming: the whole object goes away on upload.
 export function deletedSpans(text: string): LineRange[] {
   const lines = text.split(/\r?\n/);
   const out: LineRange[] = [];
   lines.forEach((line, i) => {
     const m = HEADER_RE.exec(line);
-    const end = m && m[2] === '-' ? blockEnd(lines, i) : i;
-    if (end > i) {
-      out.push({ startLine: i + 1, endLine: end });
+    if (m && m[2] === '-') {
+      out.push({ startLine: i, endLine: blockEnd(lines, i) });
     }
   });
   return out;
