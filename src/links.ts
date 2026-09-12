@@ -1,6 +1,8 @@
 // Pure link extraction for Level0L text. No dependency on the vscode API so
 // it can be unit-tested and reused (e.g. in a language server) later.
 
+import { HEADER_RE, MEMBER_RE, isBlankOrComment, parseTagLine } from './lines';
+
 export interface LinkOptions {
   osmBaseUrl: string;
   wikiBaseUrl: string;
@@ -15,11 +17,6 @@ export interface TextLink {
   tooltip: string;
 }
 
-const HEADER_RE =
-  /^(!)?(-)?(node|way|relation|changeset)(?:\s+(-?[0-9]+)(?:\.([0-9]+))?)?(?:\s*:\s*(-?[0-9]{1,2}(?:\.[0-9]+)?)\s*,\s*(-?[0-9]{1,3}(?:\.[0-9]+)?))?\s*(?:#.*)?$/;
-const MEMBER_RE = /^\s*(nd|wy|rel)\s+(-?[0-9]+)(?:\s+(.+?))?\s*$/;
-const TAG_RE = /^\s*((?:[^=\\]|\\.)*?)\s*=\s*(.*?)\s*$/;
-
 const MEMBER_TYPES: Record<string, string> = { nd: 'node', wy: 'way', rel: 'relation' };
 
 function trimSlash(url: string): string {
@@ -28,12 +25,14 @@ function trimSlash(url: string): string {
 
 // Wiki page titles keep ':' readable; everything else that is unsafe in a URL
 // path gets percent-encoded.
-function wikiTitle(s: string): string {
+export function wikiTitle(s: string): string {
   return encodeURIComponent(s).replace(/%3A/gi, ':');
 }
 
-function indexOfGroup(line: string, group: string, from: number): number {
-  return line.indexOf(group, from);
+// Values that look like a plain enumerated value (lowercase identifier), as
+// opposed to free text such as names, addresses or numbers.
+export function isEnumValue(value: string): boolean {
+  return /^[a-z][a-z0-9_]*$/.test(value);
 }
 
 export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
@@ -45,7 +44,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
   let insideChangeset = false;
 
   lines.forEach((line, lineNo) => {
-    if (!line.trim() || line.trimStart().startsWith('#')) {
+    if (isBlankOrComment(line)) {
       return;
     }
 
@@ -55,7 +54,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
       insideChangeset = type === 'changeset';
 
       if (id && !id.startsWith('-') && id !== '0') {
-        const start = indexOfGroup(line, id, type.length);
+        const start = line.indexOf(id, type.length);
         links.push({
           line: lineNo,
           start,
@@ -66,8 +65,8 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
       }
 
       if (lat && lon) {
-        const start = indexOfGroup(line, lat, line.indexOf(':'));
-        const end = indexOfGroup(line, lon, start + lat.length) + lon.length;
+        const start = line.indexOf(lat, line.indexOf(':'));
+        const end = line.indexOf(lon, start + lat.length) + lon.length;
         links.push({
           line: lineNo,
           start,
@@ -86,7 +85,7 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
         return;
       }
       const type = MEMBER_TYPES[kind];
-      const start = indexOfGroup(line, id, line.indexOf(kind) + kind.length);
+      const start = line.indexOf(id, line.indexOf(kind) + kind.length);
       links.push({
         line: lineNo,
         start,
@@ -101,32 +100,23 @@ export function extractLinks(text: string, opts: LinkOptions): TextLink[] {
       return;
     }
 
-    m = TAG_RE.exec(line);
-    if (m) {
-      const [, rawKey, value] = m;
-      if (!rawKey) {
-        return;
-      }
-      const key = rawKey.replace(/\\=/g, '=');
-      const keyStart = line.indexOf(rawKey);
+    const tag = parseTagLine(line);
+    if (tag) {
       links.push({
         line: lineNo,
-        start: keyStart,
-        end: keyStart + rawKey.length,
-        url: `${wiki}/Key:${wikiTitle(key)}`,
-        tooltip: `Key:${key} on the OSM wiki`,
+        start: tag.keyStart,
+        end: tag.keyEnd,
+        url: `${wiki}/Key:${wikiTitle(tag.key)}`,
+        tooltip: `Key:${tag.key} on the OSM wiki`,
       });
 
-      // Only link values that look like a plain enumerated value (lowercase
-      // identifier), not free text such as names, addresses or numbers.
-      if (value && /^[a-z][a-z0-9_]*$/.test(value)) {
-        const valueStart = line.indexOf(value, keyStart + rawKey.length + 1);
+      if (isEnumValue(tag.value)) {
         links.push({
           line: lineNo,
-          start: valueStart,
-          end: valueStart + value.length,
-          url: `${wiki}/Tag:${wikiTitle(key)}=${wikiTitle(value)}`,
-          tooltip: `Tag:${key}=${value} on the OSM wiki`,
+          start: tag.valueStart,
+          end: tag.valueEnd,
+          url: `${wiki}/Tag:${wikiTitle(tag.key)}=${wikiTitle(tag.value)}`,
+          tooltip: `Tag:${tag.key}=${tag.value} on the OSM wiki`,
         });
       }
     }

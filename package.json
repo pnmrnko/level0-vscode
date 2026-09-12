@@ -1,7 +1,7 @@
 {
   "name": "level0l",
   "displayName": "Level0L",
-  "description": "Syntax highlighting and OSM links for the Level0L OpenStreetMap editing format",
+  "description": "Syntax highlighting, OSM links and taginfo hovers for the Level0L OpenStreetMap editing format",
   "version": "0.1.0",
   "publisher": "spnmrnko",
   "license": "MIT",
@@ -18,7 +18,8 @@
   "keywords": [
     "openstreetmap",
     "osm",
-    "level0"
+    "level0",
+    "taginfo"
   ],
   "main": "./out/extension.js",
   "activationEvents": [],
@@ -62,6 +63,21 @@
           "type": "boolean",
           "default": true,
           "description": "Turn tag keys and values into links to their OSM wiki pages."
+        },
+        "level0l.taginfo.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show taginfo statistics and wiki descriptions when hovering tag keys and values."
+        },
+        "level0l.taginfo.url": {
+          "type": "string",
+          "default": "https://taginfo.openstreetmap.org",
+          "description": "Base URL of the taginfo instance to query."
+        },
+        "level0l.taginfo.lang": {
+          "type": "string",
+          "default": "",
+          "description": "Language code for wiki descriptions in hovers (e.g. \"uk\"). Empty means the VS Code display language."
         }
       }
     }
