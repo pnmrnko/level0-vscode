@@ -11,7 +11,8 @@
   ],
   "repository": {
     "comment": {
-      "match": "^\\s*(#.*)$",
+      "comment": "Only a '#' in the first column starts a comment line; an indented '#' is rejected by the reference parser",
+      "match": "^(#.*)$",
       "captures": {
         "1": { "name": "comment.line.number-sign.level0l" }
       }

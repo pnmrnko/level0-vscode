@@ -18,9 +18,10 @@ export interface TagLine {
   valueEnd: number;
 }
 
+// A comment line starts with '#' in the first column; an indented '#' is not
+// a comment and the reference parser rejects such a line.
 export function isBlankOrComment(line: string): boolean {
-  const t = line.trimStart();
-  return t === '' || t.startsWith('#');
+  return line.trim() === '' || line.startsWith('#');
 }
 
 export function headerType(line: string): EntityType | undefined {

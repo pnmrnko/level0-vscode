@@ -1,41 +1,215 @@
-# Sample Level0L file covering every syntax element.
+# Level0L walkthrough. Every construct of the language is shown below, together
+# with what the extension does for it: highlighting, Cmd/Ctrl+click links and
+# taginfo hovers. The file is valid and could be uploaded by Level0 as is,
+# except for the conflict block near the end.
+#
+# Grammar, as implemented by level0l.php in the Level0 repository:
+#
+#   [!][-]type [id[.version]] [: lat, lon] [# comment]     entity header
+#     key = value                                          tag
+#     nd|wy|rel id [role]                                  way node / relation member
+#
+# A comment is a line whose first character is "#". An indented "#" is not a
+# comment and the reference parser rejects it, so the extension marks it invalid.
+# A trailing "# ..." is allowed on entity headers only; inside a tag line "#"
+# is part of the value.
+
+
+# ---------------------------------------------------------------------------
+# Changeset metadata: at most one block, tags become changeset tags. Keys here
+# are not OSM object tags, so there are no wiki links or hovers in this block.
 
 changeset
-  comment = Fix cafe tags and add a missing footway
+  comment = Survey of Khreshchatyk: fix cafe tags, add a tree and a footway
   source = survey
+  created_by = Level0 1.3
+
+
+# ---------------------------------------------------------------------------
+# Existing node: "id.version" and coordinates. The id links to osm.org, the
+# coordinates link to the map at zoom 18. The version is what Level0 sends to
+# the API; keep it so the server can detect conflicts.
+#
+# Hover "amenity" for the key: status "de facto", description in your language,
+# counts by object type, top values. Hover "cafe" for the tag: status "approved",
+# description, "Applies to", commonly combined tags.
 
 node 4294967296.3: 50.4501, 30.5234
   amenity = cafe
   name = Kyiv Coffee
   addr:street = Khreshchatyk
   addr:housenumber = 22
-  opening_hours = Mo-Fr 08:00-20:00
+  opening_hours = Mo-Fr 08:00-20:00; Sa 09:00-18:00
+  website = https://example.com/?ref=osm&utm=1
+  note = Verified on site, see issue #12
 
-# New node, not on the server yet: no links here.
+# Notes on the tags above:
+# - "name", "addr:street", "opening_hours" have free-text values, so only the
+#   key is linked and hovered; the value is not looked up as a tag.
+# - The first "=" separates key from value; further "=" belong to the value,
+#   as in the website tag. No escaping is needed in values.
+# - "#" inside a tag line is part of the value, not a comment (note tag).
+# - A key can itself contain "=" (rare, usually a mistake in the data). Level0
+#   writes such a key with the "=" escaped as "\=" so it is not split, and
+#   unescapes it when reading. Not shown live here; do not use it on purpose.
+
+
+# Node without a version: valid, but the upload will fail if the object changed
+# on the server since Level0 cannot send a version. A header may carry a
+# trailing comment.
+
+node 240109189: 50.4508, 30.5227  # entrance to the courtyard
+  entrance = yes
+  access = private
+
+
+# Untagged node: just a header. Level0 prints these last and without blank
+# lines between them.
+node 1500000001.1: 50.45012, 30.52341
+node 1500000002.1: 50.45015, 30.52360
+
+
+# ---------------------------------------------------------------------------
+# New objects have a negative id, or no id at all (which Level0 treats as id 0).
+# Negative ids get their own highlighting scope and no osm.org link. A node
+# must have coordinates unless it is being deleted.
+
 node -1: 50.4502, 30.5240
   natural = tree
+  leaf_type = broadleaved
+
+node: 50.4503, 30.5241
+  natural = tree
+
+
+# ---------------------------------------------------------------------------
+# Way: "nd" lines list its nodes in order. A closed way repeats the first node
+# last. Ways must have at least two nodes. Member ids link to osm.org; new
+# (negative) nodes do not.
 
 way 123456789.7
   highway = footway
   surface = paving_stones
+  lit = yes
   nd 4294967296
+  nd 240109189
+  nd 1500000001
+  nd 1500000002
+
+# New way referencing both existing and new nodes.
+way -2
+  highway = footway
+  nd 1500000002
   nd -1
+
+# Closed way (area). "building" hover shows how dominant "yes" is among values.
+way 987654322.4
+  building = yes
+  building:levels = 4
+  nd 1500000001
+  nd 1500000002
+  nd 240109189
+  nd 1500000001
+
+
+# ---------------------------------------------------------------------------
+# Relation: members are "nd", "wy" or "rel" followed by an id and an optional
+# role. Relations must have at least one member. A role can be omitted; a role
+# with spaces is taken verbatim to the end of the line.
+
+relation 8675309.4
+  type = multipolygon
+  landuse = grass
+  wy 123456789 outer
+  wy 987654322 inner
+  nd 4294967296
+  rel 12345 subarea
+
+relation -3
+  type = route
+  route = foot
+  name = Courtyard loop
+  wy -2
+  wy 123456789
+  nd 240109189 stop
+
+
+# ---------------------------------------------------------------------------
+# Deletion: "-" before the type. Only for existing objects; deleting a negative
+# or missing id is an error. Keep the version, the API requires it. Tags and
+# members under a deleted object are ignored.
+
+-node 1500000003.2: 50.4509, 30.5230
+  amenity = bench
 
 -way 987654321.2
   highway = path
   nd 1
   nd 2
 
-relation 8675309.4
-  type = multipolygon
-  landuse = grass
-  key\=with\=equals = value
-  wy 123456789 outer
-  wy 987654321 inner
-  nd 4294967296
-  rel 12345
 
-!node 111.5: 50.1, 30.1
+# ---------------------------------------------------------------------------
+# What taginfo hovers can tell you about tag quality. All tags below are real.
+
+node -4: 50.4504, 30.5242
   amenity = bench
+  backrest = yes
 
-this line is invalid
+# Deprecated and obsolete tags: the status badge is shown in uppercase and the
+# description says what to use instead.
+node -5: 50.4505, 30.5243
+  amenity = nursery
+
+way -6
+  natural = marsh
+  nd 1500000001
+  nd 1500000002
+
+# A key taginfo has never seen is reported as a possible typo in the hover.
+# It is a valid tag for the parser, only the hover warns about it.
+node -7: 50.4506, 30.5244
+  amenityy = cafe
+
+# "Applies to" in the hover comes from the wiki. amenity=bench is documented
+# for nodes and areas; hovering it on a route relation makes the mismatch
+# visible even though the parser accepts it.
+relation -8
+  type = route
+  amenity = bench
+  nd 4294967296
+
+
+# ---------------------------------------------------------------------------
+# Conflict marker (blocks upload). Level0 itself writes this when the object
+# was changed on the server between download and upload: your edits are
+# preserved in a comment, the current server version follows with "!" before
+# the type. Upload is refused until you merge the edits and remove the "!".
+
+# Conflict! Your edits to the old version are saved in this comment.
+# Please make appropriate changes and remove '!' character from the entity header.
+# node 111.5: 50.1, 30.1
+#   amenity = bench
+#   backrest = no
+!node 111.6: 50.1, 30.1
+  amenity = bench
+  backrest = yes
+  material = wood
+
+
+# ---------------------------------------------------------------------------
+# Lines the parser rejects. Remove the leading "#" from one of the first three
+# to see it highlighted as invalid; the extension marks them from syntax alone.
+
+#   # indented comment: not a comment, rejected as unknown content
+# this line is not a tag, member or header
+# node 50.1, 30.1       coordinates without the ":" separator
+
+# Errors the parser reports from context, not from a single line. They are
+# highlighted as normal members today; flagging them is the job of a future
+# diagnostics feature.
+#
+#   nd 123 outer        under a way: a role on a way node is a warning
+#   wy 123              under a way: ways can only have nd members
+#   nd 123              under a node: nodes cannot have members
+#   node -9             a new node without coordinates
+#   -node -9: 50, 30    deleting an object that does not exist yet
