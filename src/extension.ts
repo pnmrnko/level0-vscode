@@ -4,6 +4,7 @@ import { conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './li
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { Index } from './refs';
+import { bodyEnd, foldingRanges, summarize } from './symbols';
 import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
@@ -242,6 +243,57 @@ class Level0References implements vscode.DefinitionProvider, vscode.ReferencePro
 
 }
 
+const SYMBOL_KIND: Record<string, vscode.SymbolKind> = {
+  changeset: vscode.SymbolKind.Package,
+  node: vscode.SymbolKind.Variable,
+  way: vscode.SymbolKind.Array,
+  relation: vscode.SymbolKind.Struct,
+};
+
+// Outline: one symbol per entity with tags and members as children; deleted
+// objects are struck through. Folding: one range per entity body and per
+// block of comment lines.
+class Level0Structure implements vscode.DocumentSymbolProvider, vscode.FoldingRangeProvider {
+  provideDocumentSymbols(document: vscode.TextDocument): vscode.DocumentSymbol[] {
+    const { entities } = parse(document.getText());
+    return entities.map((e) => {
+      const { name, detail } = summarize(e);
+      const header = document.lineAt(e.line);
+      const range = new vscode.Range(e.line, 0, bodyEnd(e), document.lineAt(bodyEnd(e)).text.length);
+      const selection = e.idStart !== undefined ? new vscode.Range(e.line, e.idStart, e.line, e.idEnd!) : header.range;
+      const symbol = new vscode.DocumentSymbol(name, detail, SYMBOL_KIND[e.type], range, selection);
+      if (e.deleted) {
+        symbol.tags = [vscode.SymbolTag.Deprecated];
+      }
+      symbol.children = [
+        ...e.tags.map((t) => {
+          const r = new vscode.Range(t.line, t.keyStart, t.line, t.valueEnd);
+          return new vscode.DocumentSymbol(`${t.key} = ${t.value}`, '', vscode.SymbolKind.Property, r, r);
+        }),
+        ...e.members.map((m) => {
+          const line = document.lineAt(m.line);
+          const r = new vscode.Range(m.line, m.start, m.line, line.text.length);
+          const kind = m.type === 'node' ? 'nd' : m.type === 'way' ? 'wy' : 'rel';
+          return new vscode.DocumentSymbol(`${kind} ${m.id}`, m.role, vscode.SymbolKind.Constant, r, r);
+        }),
+      ];
+      return symbol;
+    });
+  }
+
+  provideFoldingRanges(document: vscode.TextDocument): vscode.FoldingRange[] {
+    const text = document.getText();
+    return foldingRanges(text, parse(text)).map(
+      (f) =>
+        new vscode.FoldingRange(
+          f.startLine,
+          f.endLine,
+          f.kind === 'comment' ? vscode.FoldingRangeKind.Comment : undefined
+        )
+    );
+  }
+}
+
 const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
   warning: vscode.DiagnosticSeverity.Warning,
@@ -357,6 +409,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const selector: vscode.DocumentSelector = { language: 'level0l' };
   const diagnostics = new Level0Diagnostics(taginfo, log);
   const references = new Level0References();
+  const structure = new Level0Structure();
   context.subscriptions.push(
     log,
     diagnostics,
@@ -365,6 +418,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
     vscode.languages.registerDefinitionProvider(selector, references),
     vscode.languages.registerReferenceProvider(selector, references),
+    vscode.languages.registerDocumentSymbolProvider(selector, structure),
+    vscode.languages.registerFoldingRangeProvider(selector, structure),
     versionDecoration,
     currentDecoration,
     incomingDecoration,
