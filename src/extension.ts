@@ -11,7 +11,8 @@ import { pickWikiPage, TaginfoClient } from './taginfo';
 import { isIdentifierKey } from './valuelinks';
 import { downloadCommand, overpassCommand } from './download';
 import { OsmClient } from './osm/client';
-import { checkConflictsCommand, showOscCommand } from './changes';
+import { checkConflictsCommand, exportOsmCommand, showOscCommand } from './changes';
+import { revertCommand } from './revert';
 import { AccountStatus, Auth, accountCommand, loginCommand, logoutCommand } from './auth';
 import { uploadCommand } from './upload';
 
@@ -639,6 +640,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('level0l.runOverpass', () => overpassCommand(osm, downloadOptions(), log)),
     vscode.commands.registerCommand('level0l.checkConflicts', () => checkConflictsCommand(osm, changesOptions(), log)),
     vscode.commands.registerCommand('level0l.showOsc', () => showOscCommand(osm, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.exportOsm', () => exportOsmCommand(osm, changesOptions(), log)),
+    vscode.commands.registerCommand('level0l.revert', () => revertCommand(osm, apiBase(), log)),
     vscode.commands.registerCommand('level0l.login', () => loginCommand(auth, apiBase(), changesOptions().clientId)),
     vscode.commands.registerCommand('level0l.logout', () => logoutCommand(auth, apiBase())),
     vscode.commands.registerCommand('level0l.upload', () => uploadCommand(osm, auth, changesOptions(), log)),

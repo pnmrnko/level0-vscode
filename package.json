@@ -162,6 +162,16 @@
         "category": "Level0L"
       },
       {
+        "command": "level0l.exportOsm",
+        "title": "Export as OSM XML",
+        "category": "Level0L"
+      },
+      {
+        "command": "level0l.revert",
+        "title": "Revert object to the server version",
+        "category": "Level0L"
+      },
+      {
         "command": "level0l.upload",
         "title": "Upload changeset",
         "category": "Level0L"
@@ -198,6 +208,14 @@
         },
         {
           "command": "level0l.upload",
+          "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.exportOsm",
+          "when": "editorLangId == level0l"
+        },
+        {
+          "command": "level0l.revert",
           "when": "editorLangId == level0l"
         },
         {

@@ -4,8 +4,8 @@
 import * as vscode from 'vscode';
 import { OsmClient } from './osm/client';
 import { conflictReplacements, refreshReplacements } from './osm/conflicts';
-import { Plan, historyKeys, plan, serverKeys, settleConflicts } from './osm/diff';
-import { createOsc } from './osm/osc';
+import { Plan, exportObjects, historyKeys, plan, serverKeys, settleConflicts } from './osm/diff';
+import { createOsc, createOsm } from './osm/osc';
 import { fetchState, fetchVersions } from './osm/state';
 import { parse } from './parser';
 
@@ -135,4 +135,35 @@ export async function showOscCommand(client: OsmClient, opts: ChangesOptions, lo
   const doc = await vscode.workspace.openTextDocument({ language: 'xml', content: createOsc(p.changes, opts.generator) });
   await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
   vscode.window.setStatusBarMessage(summary(p), 8000);
+}
+
+// Saves the document as OSM XML, with the actions an upload would take, for
+// JOSM and other editors.
+export async function exportOsmCommand(client: OsmClient, opts: ChangesOptions, log: vscode.OutputChannel): Promise<void> {
+  const editor = activeLevel0Editor();
+  if (!editor) {
+    return;
+  }
+  const p = await computePlan(editor, client, opts, log);
+  if (!p) {
+    return;
+  }
+  await writeConflicts(editor, p);
+  if (p.conflicts.length || p.problems.length) {
+    report(p, log);
+    return;
+  }
+  const { entities } = parse(editor.document.getText());
+  const xml = createOsm(exportObjects(entities, p), opts.generator);
+  const name = editor.document.isUntitled ? 'level0_export.osm' : editor.document.fileName.replace(/\.[^./]*$/, '') + '.osm';
+  const target = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(name),
+    filters: { 'OSM XML': ['osm'] },
+    title: 'Export as OSM XML',
+  });
+  if (!target) {
+    return;
+  }
+  await vscode.workspace.fs.writeFile(target, Buffer.from(xml, 'utf8'));
+  vscode.window.setStatusBarMessage(`Saved ${target.fsPath}: ${summary(p)}`, 8000);
 }

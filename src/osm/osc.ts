@@ -16,13 +16,19 @@ function tagsXml(o: OsmObject, indent: string): string {
   return s;
 }
 
-function objectXml(o: OsmObject, changeset: number | undefined, indent: string): string {
+function objectXml(o: OsmObject, changeset: number | undefined, indent: string, action?: string): string {
   let s = `${indent}<${o.type} id="${o.id}" version="${o.version ?? 1}"`;
   if (o.type === 'node' && o.lat !== undefined && o.lon !== undefined) {
     s += ` lat="${o.lat}" lon="${o.lon}"`;
   }
   if (changeset !== undefined) {
     s += ` changeset="${changeset}"`;
+  }
+  if (action) {
+    s += ` action="${action}"`;
+  }
+  if (!o.nodes?.length && !o.members?.length && o.tags.size === 0) {
+    return `${s}/>\n`;
   }
   s += '>\n';
   for (const nd of o.nodes ?? []) {
@@ -33,6 +39,17 @@ function objectXml(o: OsmObject, changeset: number | undefined, indent: string):
   }
   s += tagsXml(o, `${indent}  `);
   return `${s}${indent}</${o.type}>\n`;
+}
+
+// OSM XML of the whole document for JOSM and other editors, a port of
+// create_osm(): changed objects carry an action attribute, untouched ones
+// none. Objects come in document order.
+export function createOsm(objects: { object: OsmObject; action?: string }[], generator: string): string {
+  let s = `<?xml version="1.0" encoding="UTF-8"?>\n<osm version="0.6" upload="true" generator="${escapeXml(generator)}">\n`;
+  for (const { object: o, action } of objects) {
+    s += objectXml(o, undefined, '  ', action);
+  }
+  return `${s}</osm>\n`;
 }
 
 // Changes must already be in upload order (see compareChanges); consecutive

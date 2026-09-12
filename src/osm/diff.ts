@@ -192,3 +192,15 @@ export function settleConflicts(p: Plan, history: Map<string, OsmObject | undefi
   }
   p.conflicts = remaining;
 }
+
+// Every object of the document in its order, with the action the upload
+// would take, for the OSM XML export.
+export function exportObjects(entities: Entity[], p: Plan): { object: OsmObject; action?: string }[] {
+  const actions = new Map(p.changes.map((c) => [c.entity, c]));
+  return entities
+    .filter((e) => e.type !== 'changeset')
+    .map((e) => {
+      const c = actions.get(e);
+      return c ? { object: c.object, action: c.action } : { object: entityToObject(e) };
+    });
+}

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { historyKeys, isModified, plan, serverKeys, settleConflicts } from '../osm/diff';
+import { exportObjects, historyKeys, isModified, plan, serverKeys, settleConflicts } from '../osm/diff';
 import { conflictReplacements, refreshReplacements } from '../osm/conflicts';
 import { renumber } from '../osm/renumber';
-import { createChangesetXml, createOsc } from '../osm/osc';
+import { createChangesetXml, createOsc, createOsm } from '../osm/osc';
 import { OsmObject } from '../osm/model';
 import { parse } from '../parser';
 
@@ -204,4 +204,30 @@ test('negative ids taken by the document are renumbered with their references', 
   assert.deepEqual(out[2].nodes, [-4, -2, 5]);
   assert.deepEqual(out[3].members!.map((m) => m.id), [-5, -2]);
   assert.equal(renumber(objects, new Set([-9])), objects);
+});
+
+test('OSM XML export: document order, actions on changed objects only', () => {
+  const doc = parse('node 1.2: 1, 1\n  a = b\nnode -1: 2, 2\nway 3.1\n  nd 1\n  nd -1\n-node 4.1: 3, 3\n').entities;
+  const server = state(
+    obj({ type: 'node', id: 1, version: 2, lat: '1', lon: '1' }, [['a', 'b']]),
+    obj({ type: 'way', id: 3, version: 1, nodes: [1, 2] }),
+    obj({ type: 'node', id: 4, version: 1, lat: '3', lon: '3' })
+  );
+  const p = plan(doc, server);
+  assert.equal(
+    createOsm(exportObjects(doc, p), 'gen'),
+    `<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" upload="true" generator="gen">
+  <node id="1" version="2" lat="1" lon="1">
+    <tag k="a" v="b"/>
+  </node>
+  <node id="-1" version="1" lat="2" lon="2" action="create"/>
+  <way id="3" version="1" action="modify">
+    <nd ref="1"/>
+    <nd ref="-1"/>
+  </way>
+  <node id="4" version="1" lat="3" lon="3" action="delete"/>
+</osm>
+`
+  );
 });
