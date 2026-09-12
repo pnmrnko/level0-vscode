@@ -60,3 +60,23 @@ export function enclosingEntity(lines: string[], lineNo: number): EntityType | u
   }
   return undefined;
 }
+
+export interface Span {
+  line: number;
+  start: number;
+  end: number;
+}
+
+// Positions of the ".version" part of entity headers, for dimming.
+export function versionSpans(text: string): Span[] {
+  const out: Span[] = [];
+  text.split(/\r?\n/).forEach((line, lineNo) => {
+    const m = HEADER_RE.exec(line);
+    if (!m || !m[4] || !m[5]) {
+      return;
+    }
+    const start = line.indexOf(m[4], m[3].length) + m[4].length;
+    out.push({ line: lineNo, start, end: start + 1 + m[5].length });
+  });
+  return out;
+}

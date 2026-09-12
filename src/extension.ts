@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
-import { enclosingEntity, parseTagLine } from './lines';
+import { enclosingEntity, parseTagLine, versionSpans } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { checkTags } from './tagcheck';
@@ -237,6 +237,20 @@ class Level0Diagnostics {
   }
 }
 
+// Object versions are metadata the user should not edit; they are shown at
+// reduced opacity in whatever color the theme gives them.
+const versionDecoration = vscode.window.createTextEditorDecorationType({ opacity: '0.55' });
+
+function decorateVersions(editor: vscode.TextEditor | undefined): void {
+  if (!editor || editor.document.languageId !== 'level0l') {
+    return;
+  }
+  editor.setDecorations(
+    versionDecoration,
+    versionSpans(editor.document.getText()).map((s) => new vscode.Range(s.line, s.start, s.line, s.end))
+  );
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Level0L');
   const version = context.extension.packageJSON.version as string;
@@ -265,8 +279,13 @@ export function activate(context: vscode.ExtensionContext): void {
     diagnostics,
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
     vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
+    versionDecoration,
     vscode.workspace.onDidOpenTextDocument((d) => diagnostics.refresh(d)),
-    vscode.workspace.onDidChangeTextDocument((e) => diagnostics.refresh(e.document)),
+    vscode.workspace.onDidChangeTextDocument((e) => {
+      diagnostics.refresh(e.document);
+      vscode.window.visibleTextEditors.filter((ed) => ed.document === e.document).forEach(decorateVersions);
+    }),
+    vscode.window.onDidChangeVisibleTextEditors((editors) => editors.forEach(decorateVersions)),
     vscode.workspace.onDidCloseTextDocument((d) => diagnostics.clear(d)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('level0l')) {
@@ -275,6 +294,7 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
   vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
+  vscode.window.visibleTextEditors.forEach(decorateVersions);
 }
 
 export function deactivate(): void {}
