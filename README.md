@@ -38,8 +38,16 @@ From the VS Code Marketplace or Open VSX, search for "Level0L". To install a dow
 | `level0l.taginfo.lang` | `""` | Language for wiki descriptions; empty uses the VS Code display language. |
 | `level0l.taginfo.diagnostics` | `true` | Underline unused and deprecated keys and values. |
 | `level0l.osmApiUrl` | `https://api.openstreetmap.org/api/0.6/` | OSM API used for downloads. Set to `https://api06.dev.openstreetmap.org/api/0.6/` for the development server. |
-| `level0l.overpassUrl` | `https://overpass-api.de/api/interpreter` | Overpass API endpoint. Other public instances: `https://overpass.private.coffee/api/interpreter`, `https://overpass.kumi.systems/api/interpreter`. |
+| `level0l.overpassUrl` | `https://overpass-api.de/api/interpreter` | Overpass API endpoint, see below. |
 | `level0l.maxObjects` | `500` | Most objects a single download adds, the same limit Level0 has. |
+
+Public Overpass instances with global coverage, from the [OSM wiki](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances):
+
+| Endpoint | Usage policy |
+| --- | --- |
+| `https://overpass-api.de/api/interpreter` | The main instance, run by FOSSGIS and the default here. Applications get about 100 queries and 10 MB a day in total across all their users, one query at a time, with an identifying User-Agent; after a 429 or 406 wait 30 seconds. It is often overloaded. |
+| `https://overpass.private.coffee/api/interpreter` | No rate limit; large projects should notify support@private.coffee. Formerly overpass.kumi.systems. |
+| `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | No request limitations, run by VK Maps. |
 
 Taginfo, OSM API and Overpass requests go out with a `level0-vscode/<version>` User-Agent as its [usage policy](https://wiki.openstreetmap.org/wiki/Taginfo/API) asks. Failures are logged to the "Level0L" output channel and never block the editor.
 
