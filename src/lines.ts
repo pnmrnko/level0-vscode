@@ -70,20 +70,6 @@ export interface Span {
   end: number;
 }
 
-// Positions of the ".version" part of entity headers, for dimming.
-export function versionSpans(text: string): Span[] {
-  const out: Span[] = [];
-  text.split(/\r?\n/).forEach((line, lineNo) => {
-    const m = HEADER_RE.exec(line);
-    if (!m || !m[4] || !m[5]) {
-      return;
-    }
-    const start = line.indexOf(m[4], m[3].length) + m[4].length;
-    out.push({ line: lineNo, start, end: start + 1 + m[5].length });
-  });
-  return out;
-}
-
 export interface LineRange {
   startLine: number;
   endLine: number;
@@ -97,6 +83,30 @@ export interface Conflict {
   incoming: LineRange;
 }
 
+// Last line of the entity whose header is at line i: the tag and member
+// lines that follow, up to the first blank line, comment or header.
+function blockEnd(lines: string[], i: number): number {
+  let end = i;
+  while (end + 1 < lines.length && !isBlankOrComment(lines[end + 1]) && !HEADER_RE.test(lines[end + 1])) {
+    end++;
+  }
+  return end;
+}
+
+// Entities marked for deletion with "-", header to last member, for
+// dimming: Level0 ignores their tags and members.
+export function deletedSpans(text: string): LineRange[] {
+  const lines = text.split(/\r?\n/);
+  const out: LineRange[] = [];
+  lines.forEach((line, i) => {
+    const m = HEADER_RE.exec(line);
+    if (m && m[2] === '-') {
+      out.push({ startLine: i, endLine: blockEnd(lines, i) });
+    }
+  });
+  return out;
+}
+
 export function conflictSpans(text: string): Conflict[] {
   const lines = text.split(/\r?\n/);
   const out: Conflict[] = [];
@@ -104,12 +114,7 @@ export function conflictSpans(text: string): Conflict[] {
     if (!line.startsWith('!') || !HEADER_RE.test(line)) {
       return;
     }
-    // Body: the tag and member lines that follow, up to the first blank
-    // line, comment or header.
-    let end = i;
-    while (end + 1 < lines.length && !isBlankOrComment(lines[end + 1]) && !HEADER_RE.test(lines[end + 1])) {
-      end++;
-    }
+    const end = blockEnd(lines, i);
     let start = i;
     while (start > 0 && lines[start - 1].startsWith('#')) {
       start--;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { conflictSpans, versionSpans } from '../lines';
+import { conflictSpans, deletedSpans } from '../lines';
 import { parse } from '../parser';
 import { Index } from '../refs';
 import { bodyEnd, foldingRanges, summarize } from '../symbols';
@@ -60,11 +60,11 @@ test('entity bodies and folds', () => {
   ]);
 });
 
-test('version and conflict spans', () => {
-  assert.deepEqual(versionSpans(text), [
-    { line: 5, start: 6, end: 8 },
-    { line: 16, start: 7, end: 9 },
-    { line: 19, start: 7, end: 9 },
+test('deleted and conflict spans', () => {
+  assert.deepEqual(deletedSpans(text), [{ startLine: 16, endLine: 16 }]);
+  assert.deepEqual(deletedSpans('-way 1.1\n  highway = path\n  nd 2\n\nnode 4: 1, 1\n-node 5.2: 1, 1\n  amenity = bench\n'), [
+    { startLine: 0, endLine: 2 },
+    { startLine: 5, endLine: 6 },
   ]);
   assert.deepEqual(conflictSpans(text), [
     { current: { startLine: 17, endLine: 18 }, incoming: { startLine: 19, endLine: 20 } },

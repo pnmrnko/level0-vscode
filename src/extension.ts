@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
-import { MEMBER_RE, conflictSpans, enclosingEntity, parseTagLine, versionSpans } from './lines';
+import { MEMBER_RE, conflictSpans, deletedSpans, enclosingEntity, parseTagLine } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
 import { Diagnostic, parse } from './parser';
 import { Index } from './refs';
@@ -559,9 +559,9 @@ class Level0Diagnostics {
   }
 }
 
-// Object versions are metadata the user should not edit; they are shown at
-// reduced opacity in whatever color the theme gives them.
-const versionDecoration = vscode.window.createTextEditorDecorationType({ opacity: '0.55' });
+// Objects marked for deletion are drawn at reduced opacity: Level0 ignores
+// their tags and members, only the header counts.
+const deletedDecoration = vscode.window.createTextEditorDecorationType({ isWholeLine: true, opacity: '0.55' });
 
 // A conflict written by Level0 looks like a merge conflict: the comment block
 // with the user's edits and the "!" entity with the server version get the
@@ -581,12 +581,9 @@ function decorate(editor: vscode.TextEditor | undefined): void {
     return;
   }
   const text = editor.document.getText();
-  editor.setDecorations(
-    versionDecoration,
-    versionSpans(text).map((s) => new vscode.Range(s.line, s.start, s.line, s.end))
-  );
   const conflicts = conflictSpans(text);
   const lineRange = (r: { startLine: number; endLine: number }) => new vscode.Range(r.startLine, 0, r.endLine, 0);
+  editor.setDecorations(deletedDecoration, deletedSpans(text).map(lineRange));
   editor.setDecorations(currentDecoration, conflicts.filter((c) => c.current).map((c) => lineRange(c.current!)));
   editor.setDecorations(incomingDecoration, conflicts.map((c) => lineRange(c.incoming)));
 }
@@ -640,7 +637,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerDocumentSymbolProvider(selector, structure),
     vscode.languages.registerCompletionItemProvider(selector, new Level0Completion(taginfo, log), '=', ' ', ';'),
     vscode.languages.registerFoldingRangeProvider(selector, structure),
-    versionDecoration,
+    deletedDecoration,
     currentDecoration,
     incomingDecoration,
     vscode.workspace.onDidOpenTextDocument((d) => diagnostics.refresh(d)),
