@@ -127,7 +127,9 @@
     mode = mode === next ? '' : next;
     document.getElementById('select').classList.toggle('active', mode === 'select');
     document.getElementById('pick').classList.toggle('active', mode === 'pick');
-    document.getElementById('map').className = mode === 'select' ? 'selecting' : mode === 'pick' ? 'picking' : '';
+    const el = document.getElementById('map');
+    el.classList.toggle('selecting', mode === 'select');
+    el.classList.toggle('picking', mode === 'pick');
     if (mode === 'select') {
       map.dragging.disable();
     } else {
