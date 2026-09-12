@@ -89,7 +89,8 @@
     "configurationDefaults": {
       "[level0l]": {
         "editor.wordWrap": "on",
-        "editor.guides.indentation": false
+        "editor.guides.indentation": false,
+        "editor.wordBasedSuggestions": "off"
       }
     }
   },
