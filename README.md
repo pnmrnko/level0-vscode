@@ -1,8 +1,10 @@
 # Level0L for Visual Studio Code
 
-Editor support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the text format used by the [Level0](https://wiki.openstreetmap.org/wiki/Level0) OpenStreetMap editor.
+Editing OpenStreetMap as text in VS Code: language support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the format of the [Level0](https://wiki.openstreetmap.org/wiki/Level0) editor, plus the editor's own workflow, download from the OSM API or Overpass, check against the server, upload as a changeset, without leaving VS Code.
 
 ## Features
+
+### Editing
 
 - Syntax highlighting for entity headers (`node`, `way`, `relation`, `changeset`), IDs and versions, coordinates, tags, way nodes and relation members, comments. Negative (new) IDs, the delete prefix `-` and the conflict marker `!` get their own scopes so themes can make them stand out. The tags and members of objects marked for deletion with `-` are drawn at reduced opacity, since Level0 ignores them; the header stays as it is. A conflict written by Level0 is shown like a git merge conflict: the comment block holding your edits gets the theme's "current" background, the `!` entity with the server version the "incoming" background. Lines the Level0 parser would reject are marked as invalid.
 - Clickable links (Ctrl/Cmd+click):
@@ -16,17 +18,18 @@ Editor support for [Level0L](https://wiki.openstreetmap.org/wiki/Level0L), the t
 - Outline and folding. The outline view, breadcrumbs, sticky scroll and Go to Symbol (Cmd/Ctrl+Shift+O) list every object with a one-line summary (`amenity=cafe · Kyiv Coffee`, `type=multipolygon · landuse=grass`), its tags and members as children, deleted objects struck through. Each object folds as a block, as does every run of comment lines.
 - Diagnostics. The validation rules of the Level0 parser are ported one to one: conflicts, deleting unsaved objects, nodes without coordinates, ways with fewer than two nodes, relations without members, members on the wrong entity type, duplicated tags, unparsable lines. Errors are the ones Level0 refuses to upload; warnings are reported but uploaded. Taginfo adds warnings for keys unused in OSM, values unused with their key, and keys or tags the wiki marks deprecated or obsolete. Values are checked only when they look like an enumerated value and the key is enumerated (a few thousand distinct values at most, like `amenity`, not millions like `name`). Checks run 700 ms after the last edit; one request per distinct key and per distinct unusual tag, cached for a day, at most four in flight.
 - JOSM interoperability. Text copied with the JOSM comfort0 plugin carries a `#comment` after every header and member line. Members with such comments are read correctly, and the command "Level0L: Strip member comments (JOSM comfort0)" removes them, which is needed before pasting into Level0 itself: its parser takes a comment after a relation member as part of the role, so those lines are marked with an information diagnostic.
+Files are recognized by the `.l0l` and `.level0` extensions, or by a first line that starts with an entity header. Line comments start with `#` in the first column.
+
+### Working with OSM
+
 - Download from OSM. The command "Level0L: Download from OSM" takes what the input field of Level0 takes: an osm.org object, changeset or map URL (`#map=17/50.45/30.52` downloads a small box around that point), an API 0.6 URL, an Overpass `interpreter?data=` URL, a pair of coordinates, or a list of objects such as `n123, w45, r7`, where `w45!` adds the way with its nodes (osm.org way URLs do that too), `n12*` the ways and relations using the node, `node 123.4` that exact version and `c99` the contents of a changeset. Any other http(s) URL is read as OSM XML or osmChange; new objects in it with negative ids the document already uses are renumbered, references included. Objects are appended to the Level0L document that is active or visible, skipping those already in it, or opened in a new one. Objects deleted on the server are left out.
 - Overpass queries. "Level0L: Run Overpass query" sends the selected text, or the whole file when it is an `.overpassql` file, or a query typed into the input box (the download command accepts a query too) to the Overpass API and adds the result the same way. `{{bbox}}` is replaced with the extent of the nodes in the Level0L document that is active or visible next to the query, in the `south,west,north,east` order of overpass turbo, or asked for when there is no such document; other turbo shortcuts such as `{{geocodeArea:...}}` are not available outside turbo and are reported. Use `out meta` to get object versions, otherwise the objects cannot be uploaded later. Only XML output is read, so leave out `[out:json]`. Files with the `.overpassql` extension are recognized as "Overpass QL"; for syntax highlighting install the [Overpass QL syntax](https://marketplace.visualstudio.com/items?itemName=tqdv.overpassql-syntax) extension.
 - Check for conflicts and preview the upload. "Level0L: Check for conflicts with the server" fetches the current state of every object with a positive id and compares it with the document: objects with an unchanged version and identical tags, coordinates and members count as untouched, differing ones as modified, the `-` prefix as a deletion, negative or missing ids as creations. An object whose version moved on the server is compared with the version it was downloaded from, read from the history: if the document had not touched it, the block is simply replaced by the current server version; if it had, it is a conflict and is written into the document the way Level0 writes it, your version in a comment block above the `!` header of the server version; objects deleted on the server, objects without a version and objects unknown to the server are reported. Nothing is stored between runs, the document is the only state, so a file can be checked or uploaded from any machine. "Level0L: Show osmChange" runs the same comparison and opens the osmChange an upload would send, as an unsaved XML document that can be saved as `.osc` and loaded into JOSM; it refuses when the document has errors Level0 would refuse too.
 - Upload. "Level0L: Upload changeset" logs you in when needed, compares the document with the server as above, shows what will be created, modified and deleted together with the changeset comment (taken from the `comment` tag of the `changeset` block, or asked for) and, once confirmed, creates the changeset, uploads the osmChange and closes it. The server's answer is written back into the document: new objects get their real ids, changed objects their new versions, member lines follow, deleted objects disappear. Comments and everything else stay as written, so the file keeps matching the server and can be edited further. A conflict the server reports at upload time (409) is shown with a hint to run the conflict check.
-- Login. "Level0L: Log in to OSM" opens the OSM authorization page in the browser; after approval the browser returns to VS Code and the token is kept in the editor's secret storage (the system keychain), one per server, until "Level0L: Log out of OSM". No password ever goes through the extension. The return link is `vscode://pnmrnko.level0l/oauth`, which is what is registered with OSM, so the login works in VS Code proper; other editors built on VS Code use their own URL scheme and would need their own registration, settable with `level0l.oauth.clientId`.
+- Login. "Level0L: Log in to OSM" opens the OSM authorization page in the browser; after approval the browser returns to VS Code and the token is kept in the editor's secret storage (the system keychain), one per server, until "Level0L: Log out of OSM". No password ever goes through the extension. The return link is `vscode://pnmrnko.level0l/oauth`, which is what is registered with OSM, so the login works in VS Code proper; other editors built on VS Code use their own URL scheme and would need their own registration, settable with `level0l.oauth.clientId`. In this version the built-in application exists for the development server only; to upload to openstreetmap.org, register a public OAuth 2 application there (redirect URI as above, permissions "read user preferences" and "modify the map") and put its client id into `level0l.oauth.clientId`.
 - Revert. "Level0L: Revert object to the server version" replaces the object under the cursor, or every object the selection touches, with its current server version; a conflict block above it goes too. New objects have nothing to revert to and are reported, as are objects deleted on the server.
 - Export. "Level0L: Export as OSM XML" saves the document as a `.osm` file for JOSM and other editors, with `action` attributes on the objects an upload would create, modify or delete, after the same comparison with the server as the conflict check.
 - Account in the status bar. While a Level0L document is active the status bar shows who is logged in, with "(dev)" when the development server is configured, or "Log in to OSM"; clicking it logs in, or offers to log out.
-- Line comments with `#`.
-
-Files are recognized by the `.l0l` and `.level0` extensions, or by a first line that starts with an entity header.
 
 ## Trying it safely
 
@@ -36,7 +39,7 @@ Limits: a download stops at `level0l.maxObjects` (500 by default, the limit Leve
 
 ## Installation
 
-From the VS Code Marketplace or Open VSX, search for "Level0L". To install a downloaded `.vsix` instead: Extensions view, the "..." menu, "Install from VSIX...", or `code --install-extension level0l-0.1.0.vsix`.
+From the VS Code Marketplace or Open VSX, search for "Level0L". To install a downloaded `.vsix` instead: Extensions view, the "..." menu, "Install from VSIX...", or `code --install-extension level0l-<version>.vsix`.
 
 ## Settings
 
@@ -62,7 +65,7 @@ Public Overpass instances with global coverage, from the [OSM wiki](https://wiki
 | `https://overpass.private.coffee/api/interpreter` | No rate limit; large projects should notify support@private.coffee. Formerly overpass.kumi.systems. |
 | `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | No request limitations, run by VK Maps. |
 
-Taginfo, OSM API and Overpass requests go out with a `level0-vscode/<version>` User-Agent as its [usage policy](https://wiki.openstreetmap.org/wiki/Taginfo/API) asks. Failures are logged to the "Level0L" output channel and never block the editor.
+Taginfo, OSM API and Overpass requests go out with a `level0-vscode/<version>` User-Agent, as the [taginfo](https://wiki.openstreetmap.org/wiki/Taginfo/API) and Overpass usage policies ask. Every request and failure is logged to the "Level0L" output channel; failures of hovers and diagnostics never block the editor.
 
 ## Development
 
@@ -71,7 +74,7 @@ npm install
 npm test
 ```
 
-`npm test` compiles and runs the unit tests of the parser, links, completion and outline modules with Node's built-in test runner; they need no VS Code and no network. Then press F5 in VS Code to launch an Extension Development Host with the `samples/` folder opened.
+`npm test` compiles and runs the unit tests with Node's built-in test runner: the parser, links, completion and outline modules, and the OSM modules in `src/osm/` (XML reading and writing, Level0L formatting, input parsing, the change plan, the diffResult application, OAuth helpers). They need no VS Code and no network; the server is faked where one is needed. Then press F5 in VS Code to launch an Extension Development Host with the `samples/` folder opened.
 
 To build a `.vsix`: `npx @vscode/vsce package`. Releases are published with `npx @vscode/vsce publish` (Marketplace) and `npx ovsx publish` (Open VSX).
 

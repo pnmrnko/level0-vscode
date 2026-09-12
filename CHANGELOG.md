@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+The editor now talks to OpenStreetMap. Nothing is stored outside the document: it carries ids and versions, and the server is asked for the rest when a command runs, so a file can be checked or uploaded later or elsewhere.
 
 - New command "Level0L: Download from OSM": objects, changesets, map areas and Overpass results are fetched from the API and appended to the document as Level0L text, with the same input forms Level0 accepts. Settings `level0l.osmApiUrl` and `level0l.maxObjects`.
 - New command "Level0L: Run Overpass query": runs the selection, an `.overpassql` file or a typed query and adds the result to the document; `{{bbox}}` is the extent of the document. Files `.overpassql` are recognized as Overpass QL. Setting `level0l.overpassUrl`.
 - New commands "Level0L: Check for conflicts with the server" and "Level0L: Show osmChange": the document is compared with the current server state, untouched objects the server changed are refreshed and edited ones become conflicts written into it as Level0 does, and the osmChange an upload would send can be previewed and saved as `.osc`.
-- New commands "Level0L: Upload changeset", "Log in to OSM" and "Log out of OSM": OAuth 2 login with PKCE in the browser, token in the secret storage, upload as one changeset, and the server's diffResult applied to the document. Setting `level0l.oauth.clientId`.
+- New commands "Level0L: Upload changeset", "Log in to OSM" and "Log out of OSM": OAuth 2 login with PKCE in the browser, token in the secret storage, upload as one changeset, and the server's diffResult applied to the document. Setting `level0l.oauth.clientId`; a built-in application is registered for the development server, openstreetmap.org needs one of your own for now.
 - New commands "Level0L: Revert object to the server version" and "Level0L: Export as OSM XML".
 - The status bar shows the logged-in account and whether the development server is in use.
 - Overpass: a busy server and 429/406 answers get plain messages, queries run one at a time.

@@ -1,8 +1,8 @@
 {
   "name": "level0l",
   "displayName": "Level0L",
-  "description": "Syntax highlighting, OSM links and taginfo hovers for the Level0L OpenStreetMap editing format",
-  "version": "0.1.1",
+  "description": "Edit OpenStreetMap as text: Level0L language support with taginfo, download from OSM and Overpass, conflict check and changeset upload",
+  "version": "0.2.0",
   "publisher": "pnmrnko",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -31,7 +31,8 @@
     "osm",
     "level0",
     "level0l",
-    "taginfo"
+    "taginfo",
+    "overpass"
   ],
   "main": "./out/extension.js",
   "activationEvents": [],

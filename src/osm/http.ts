@@ -55,7 +55,10 @@ function requestOnce(url: string, opts: RequestOptions, redirects = 0): Promise<
       const location = res.headers.location;
       if (status >= 300 && status < 400 && location && redirects < MAX_REDIRECTS && (opts.method ?? 'GET') === 'GET') {
         res.resume();
-        resolve(requestOnce(new URL(location, u).toString(), opts, redirects + 1));
+        const target = new URL(location, u);
+        // Credentials stay with the host they were meant for.
+        const next = target.host === u.host ? opts : { ...opts, headers: Object.fromEntries(Object.entries(headers).filter(([k]) => k.toLowerCase() !== 'authorization')) };
+        resolve(requestOnce(target.toString(), next, redirects + 1));
         return;
       }
       const chunks: Buffer[] = [];

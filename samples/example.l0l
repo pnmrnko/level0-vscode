@@ -1,4 +1,4 @@
-# Level0L walkthrough. Every construct of the language is shown below, together with what the extension does for it: highlighting, Cmd/Ctrl+click links and taginfo hovers. The file is valid and could be uploaded by Level0 as is, except for the conflict block near the end.
+# Level0L walkthrough. Every construct of the language is shown below, together with what the extension does for it: highlighting, Cmd/Ctrl+click links and taginfo hovers. The OSM commands (Download, Run Overpass query, Check for conflicts, Upload) live in the command palette under "Level0L"; the ids in this file are made up, so a conflict check reports most of them as unknown to the server, which is expected. The file is valid and could be uploaded by Level0 as is, except for the conflict block near the end.
 #
 # Grammar, as implemented by level0l.php in the Level0 repository:
 #
