@@ -3,6 +3,7 @@
 // who the token belongs to. Pure module, no vscode API.
 
 import { createHash, randomBytes } from 'node:crypto';
+import { request } from './http';
 
 export const SCOPES = 'read_prefs write_api';
 
@@ -73,15 +74,19 @@ export async function exchangeCode(
     client_id: clientId,
     code_verifier: verifier,
   });
-  const res = await fetch(new URL('/oauth2/token', site), {
+  const res = await request(new URL('/oauth2/token', site).toString(), {
     method: 'POST',
     headers: { 'User-Agent': userAgent, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body: body.toString(),
-    signal: AbortSignal.timeout(30000),
   });
-  const json = (await res.json().catch(() => ({}))) as Partial<TokenResponse> & { error?: string; error_description?: string };
-  if (!res.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? `HTTP ${res.status}`);
+  let json: Partial<TokenResponse> & { error?: string; error_description?: string } = {};
+  try {
+    json = JSON.parse(res.body);
+  } catch {
+    // Not JSON: reported through the status below.
+  }
+  if (res.status !== 200 || !json.access_token) {
+    throw new Error(json.error_description ?? json.error ?? `HTTP ${res.status} from the token endpoint`);
   }
   return json as TokenResponse;
 }
@@ -92,13 +97,10 @@ export interface UserDetails {
 }
 
 export async function userDetails(apiBase: string, token: string, userAgent: string): Promise<UserDetails> {
-  const res = await fetch(`${apiBase}user/details.json`, {
-    headers: { 'User-Agent': userAgent, Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+  const res = await request(`${apiBase}user/details.json`, { headers: { 'User-Agent': userAgent, Authorization: `Bearer ${token}` } });
+  if (res.status !== 200) {
+    throw new Error(`HTTP ${res.status} for user/details`);
   }
-  const json = (await res.json()) as { user: UserDetails };
+  const json = JSON.parse(res.body) as { user: UserDetails };
   return { id: json.user.id, display_name: json.user.display_name };
 }
