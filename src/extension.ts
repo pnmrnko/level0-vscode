@@ -36,6 +36,7 @@ function hoverOptions(): HoverOptions {
     lang: taginfoLang(),
     wikiBaseUrl: cfg.get<string>('wikiBaseUrl', 'https://wiki.openstreetmap.org/wiki'),
     taginfoBaseUrl: cfg.get<string>('taginfo.url', 'https://taginfo.openstreetmap.org'),
+    descriptionInDiagnostics: cfg.get<boolean>('taginfo.diagnostics', true),
   };
 }
 

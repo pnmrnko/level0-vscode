@@ -7,6 +7,18 @@ export interface HoverOptions {
   lang: string;
   wikiBaseUrl: string;
   taginfoBaseUrl: string;
+  // When diagnostics already show the wiki's advice for deprecated and
+  // obsolete tags, the hover leaves the description out to avoid repeating
+  // it in the same popup.
+  descriptionInDiagnostics?: boolean;
+}
+
+function isBadStatus(page: WikiPage | undefined): boolean {
+  return !!page?.status && /obsolete|deprecated|discardable/i.test(page.status);
+}
+
+function showDescription(page: WikiPage | undefined, o: HoverOptions): boolean {
+  return !(o.descriptionInDiagnostics && isBadStatus(page));
 }
 
 function fmt(n: number, lang: string): string {
@@ -40,8 +52,7 @@ function statusBadge(page: WikiPage | undefined): string {
   if (!s) {
     return '';
   }
-  const bad = /obsolete|deprecated|discardable|abandoned|rejected/i.test(s);
-  return bad ? ` · **${s.toUpperCase()}**` : ` · _${s}_`;
+  return isBadStatus(page) ? ` · **${s.toUpperCase()}**` : ` · _${s}_`;
 }
 
 function footer(wikiPath: string, taginfoPath: string, o: HoverOptions): string {
@@ -55,7 +66,7 @@ export function buildKeyHover(overview: KeyOverview, pages: WikiPage[], o: Hover
   const lines: string[] = [];
 
   lines.push(`**${overview.key}**${statusBadge(en ?? page)}`);
-  if (page?.description) {
+  if (page?.description && showDescription(en ?? page, o)) {
     lines.push('', page.description);
   }
   lines.push('', countsLine(overview.counts, o.lang));
@@ -86,7 +97,7 @@ export function buildTagHover(overview: TagOverview, pages: WikiPage[], o: Hover
   lines.push(`**${label}**${statusBadge(en ?? page)}`);
 
   const description = overview.description[o.lang]?.text ?? overview.description['en']?.text ?? page?.description;
-  if (description) {
+  if (description && showDescription(en ?? page, o)) {
     lines.push('', description);
   }
   lines.push('', countsLine(overview.counts, o.lang));
