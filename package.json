@@ -3,16 +3,16 @@
   "displayName": "Level0L",
   "description": "Syntax highlighting, OSM links and taginfo hovers for the Level0L OpenStreetMap editing format",
   "version": "0.1.0",
-  "publisher": "spnmrnko",
+  "publisher": "pnmrnko",
   "license": "MIT",
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/spnmrnko/level0-vscode"
+    "url": "https://github.com/pnmrnko/level0-vscode"
   },
-  "homepage": "https://github.com/spnmrnko/level0-vscode#readme",
+  "homepage": "https://github.com/pnmrnko/level0-vscode#readme",
   "bugs": {
-    "url": "https://github.com/spnmrnko/level0-vscode/issues"
+    "url": "https://github.com/pnmrnko/level0-vscode/issues"
   },
   "galleryBanner": {
     "color": "#1f5f3b",
