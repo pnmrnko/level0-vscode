@@ -6,6 +6,8 @@ export interface TaginfoOptions {
   baseUrl: string;
   userAgent: string;
   timeoutMs?: number;
+  // Maximum requests in flight at once; the rest wait in a queue.
+  concurrency?: number;
 }
 
 export interface Counts {
@@ -62,6 +64,8 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export class TaginfoClient {
   private cache = new Map<string, { expires: number; value: Promise<unknown> }>();
+  private inFlight = 0;
+  private queue: (() => void)[] = [];
 
   constructor(private opts: TaginfoOptions) {}
 
@@ -103,6 +107,29 @@ export class TaginfoClient {
   }
 
   private async fetchJson<T>(url: URL): Promise<T> {
+    await this.acquire();
+    try {
+      return await this.fetchJsonNow<T>(url);
+    } finally {
+      this.release();
+    }
+  }
+
+  private acquire(): Promise<void> {
+    const limit = this.opts.concurrency ?? 4;
+    if (this.inFlight < limit) {
+      this.inFlight++;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.queue.push(() => { this.inFlight++; resolve(); }));
+  }
+
+  private release(): void {
+    this.inFlight--;
+    this.queue.shift()?.();
+  }
+
+  private async fetchJsonNow<T>(url: URL): Promise<T> {
     const res = await fetch(url, {
       headers: { 'User-Agent': this.opts.userAgent, Accept: 'application/json' },
       signal: AbortSignal.timeout(this.opts.timeoutMs ?? 5000),

@@ -78,6 +78,11 @@
           "type": "string",
           "default": "",
           "description": "Language code for wiki descriptions in hovers (e.g. \"uk\"). Empty means the VS Code display language."
+        },
+        "level0l.taginfo.diagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Warn about keys and values that are unused in OSM or marked deprecated on the wiki, using taginfo."
         }
       }
     },

@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { buildKeyHover, buildTagHover, buildUnknownHover, totalCount, HoverOptions } from './hover';
 import { enclosingEntity, parseTagLine } from './lines';
 import { extractLinks, isEnumValue, wikiTitle, LinkOptions } from './links';
+import { Diagnostic, parse } from './parser';
+import { checkTags } from './tagcheck';
 import { pickWikiPage, TaginfoClient } from './taginfo';
 
 function config() {
@@ -175,6 +177,65 @@ class Level0HoverProvider implements vscode.HoverProvider {
   }
 }
 
+const SEVERITY: Record<Diagnostic['severity'], vscode.DiagnosticSeverity> = {
+  error: vscode.DiagnosticSeverity.Error,
+  warning: vscode.DiagnosticSeverity.Warning,
+};
+
+function toVscode(d: Diagnostic, source: string): vscode.Diagnostic {
+  const out = new vscode.Diagnostic(new vscode.Range(d.line, d.start, d.line, d.end), d.message, SEVERITY[d.severity]);
+  out.source = source;
+  return out;
+}
+
+// Parser diagnostics are published immediately on every change; taginfo
+// checks follow after a pause in typing and are dropped if the document
+// changed meanwhile.
+class Level0Diagnostics {
+  private collection = vscode.languages.createDiagnosticCollection('level0l');
+  private timers = new Map<string, NodeJS.Timeout>();
+
+  constructor(private taginfo: () => TaginfoClient, private log: vscode.OutputChannel) {}
+
+  dispose(): void {
+    this.collection.dispose();
+    this.timers.forEach(clearTimeout);
+  }
+
+  clear(document: vscode.TextDocument): void {
+    this.collection.delete(document.uri);
+  }
+
+  refresh(document: vscode.TextDocument): void {
+    if (document.languageId !== 'level0l') {
+      return;
+    }
+    const { entities, diagnostics } = parse(document.getText());
+    const base = diagnostics.map((d) => toVscode(d, 'level0'));
+    this.collection.set(document.uri, base);
+
+    const key = document.uri.toString();
+    clearTimeout(this.timers.get(key));
+    if (!config().get<boolean>('taginfo.enabled', true) || !config().get<boolean>('taginfo.diagnostics', true)) {
+      return;
+    }
+    const version = document.version;
+    this.timers.set(
+      key,
+      setTimeout(async () => {
+        try {
+          const found = await checkTags(entities, this.taginfo(), { lang: taginfoLang() });
+          if (document.version === version) {
+            this.collection.set(document.uri, [...base, ...found.map((d) => toVscode(d, 'taginfo'))]);
+          }
+        } catch (err) {
+          this.log.appendLine(`tag check failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }, 700)
+    );
+  }
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Level0L');
   const version = context.extension.packageJSON.version as string;
@@ -197,11 +258,22 @@ export function activate(context: vscode.ExtensionContext): void {
   };
 
   const selector: vscode.DocumentSelector = { language: 'level0l' };
+  const diagnostics = new Level0Diagnostics(taginfo, log);
   context.subscriptions.push(
     log,
+    diagnostics,
     vscode.languages.registerDocumentLinkProvider(selector, new Level0LinkProvider(taginfo, log)),
-    vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log))
+    vscode.languages.registerHoverProvider(selector, new Level0HoverProvider(taginfo, log)),
+    vscode.workspace.onDidOpenTextDocument((d) => diagnostics.refresh(d)),
+    vscode.workspace.onDidChangeTextDocument((e) => diagnostics.refresh(e.document)),
+    vscode.workspace.onDidCloseTextDocument((d) => diagnostics.clear(d)),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('level0l')) {
+        vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
+      }
+    })
   );
+  vscode.workspace.textDocuments.forEach((d) => diagnostics.refresh(d));
 }
 
 export function deactivate(): void {}

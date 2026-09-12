@@ -123,13 +123,13 @@ relation -3
 
 
 # ---------------------------------------------------------------------------
-# What taginfo hovers can tell you about tag quality. All tags below are real.
+# What taginfo can tell you about tag quality. All tags below are real. Besides the hover, the extension underlines keys unused in OSM, values unused with their key (only for enumerated keys such as amenity or surface, never for free text such as name or ref) and tags the wiki marks deprecated or obsolete. The checks run a moment after you stop typing.
 
 node -4: 50.4504, 30.5242
   amenity = bench
   backrest = yes
 
-# Deprecated and obsolete tags: the status badge is shown in uppercase and the description says what to use instead.
+# Deprecated and obsolete tags: underlined with the wiki's advice, and the hover shows the status in uppercase.
 node -5: 50.4505, 30.5243
   amenity = nursery
 
@@ -138,7 +138,7 @@ way -6
   nd 1500000001
   nd 1500000002
 
-# A key taginfo has never seen is reported as a possible typo in the hover. It is a valid tag for the parser, only the hover warns about it.
+# A key taginfo has never seen is underlined as a possible typo. It is a valid tag for the parser, so it does not block the upload.
 node -7: 50.4506, 30.5244
   amenityy = cafe
 
@@ -164,13 +164,13 @@ relation -8
 
 
 # ---------------------------------------------------------------------------
-# Lines the parser rejects. Remove the leading "#" from one of the first three to see it highlighted as invalid; the extension marks them from syntax alone.
+# Lines the parser rejects. Remove the leading "#" from one of the first three to see it highlighted as invalid and reported as a warning; Level0 skips such lines on upload.
 
 #   # indented comment: not a comment, rejected as unknown content
 # this line is not a tag, member or header
 # node 50.1, 30.1       coordinates without the ":" separator
 
-# Errors the parser reports from context, not from a single line. They are highlighted as normal members today; flagging them is the job of a future diagnostics feature.
+# Errors the parser reports from context, not from a single line. They are highlighted as normal members and reported through diagnostics: errors block the upload in Level0, warnings do not.
 #
 #   nd 123 outer        under a way: a role on a way node is a warning
 #   wy 123              under a way: ways can only have nd members
